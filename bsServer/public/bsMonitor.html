@@ -1,0 +1,68 @@
+<!DOCTYPE HTML>
+<!--
+    S19 CSCI470 Web Science
+    Monitor of Battleship SSE Events
+
+    Phillip J. Curtiss, Assistant Professor
+    Department of Computer Science, Montana Tech
+    pcurtiss@mtech.edu, 406-496-4807
+-->
+<html lang="en-US">
+
+<head>
+    <title>Battleship SSE Events Monitor</title>
+    <!-- defined metadata -->
+    <meta charset="utf-8">
+    <meta name="application-name" content="Battleship Game SSE Events Monitor">
+    <meta name="description" content="Monitors transformations of game model">
+    <meta name="author" content="Phil Curtiss">
+    <!-- responsive elements -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- external style sheets -->
+    <link rel="stylesheet" href="stylesheets/bsMonitor.css">
+</head>
+
+<body>
+    <header>
+        <span class="title">Battleship SSE Events Monitor</span>
+        <nav>
+            <button id="connect">Connect</button>
+            <button id="refresh">Refresh</button>
+            <button id="about">About</button>
+        </nav>
+    </header>
+
+    <main>
+        <template title="Ship Detail Information">
+        <article class="ship" data-name="shipname" data-size="0">
+            <div class="shipName">Name (size): <output></output></div>
+            <div class="location">Location</div>
+            <div class="gridTile">Grid Tile: <output></output></div>
+            <div class="orientation">Orientation: <output></output></div>
+            <div class="hitProfiles">Hit Profiles</div>
+            <div class="playerTile">Player: <output></output></div>
+            <div class="opponentTile">Opponent: <output></output></div>
+            <div class="playerHealth">Health: <output></output></div>
+            <div class="opponentHealth">Health: <output></output></div>
+        </article>
+        </template>
+        <article>
+            <div id="misses">Misses: <output></output></div>
+        </article>
+    </main>
+
+    <footer>
+        <span class="left">
+            &copy 2019 All Rights Reserved<br>
+            Department of Computer Science, Montana Tech
+        </span>
+        <span class="right">
+            S19 CSCI 470 Web Science<br>
+            Phillip J. Curtiss, Assistant Professor
+        </span>
+    </footer>
+    <!-- external script behaviors -->
+    <script src="javascripts/bsMonitor.js"></script>
+</body>
+
+</html>

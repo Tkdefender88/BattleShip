@@ -1,0 +1,60 @@
+// 
+// S19 CSCI470 Web Science
+//
+// Example of using VS Code REST Client for testing REST end-points
+// for the Battleship Game Play Protocol
+//
+// Phillip J. Curtiss, Assistant Professor
+// pcurtiss@mtech.edu, 406-496-4807
+// Department of Computer Science, Montana Tech
+//
+
+// Global variables for end-point testing
+@hostname = https://csdept16.mtech.edu
+@port = 30122
+@host = {{hostname}}:{{port}}
+@contentType = application/json
+
+###
+// battle with filename parameter end-point
+@resource = battle
+@filename = foo.js
+
+GET {{host}}/bsProtocol/{{resource}}/{{filename}} HTTP/1.1
+
+###
+// battle with filename and uri parameters end-point
+@opponent = csdept16.mtech.edu:30123
+
+GET {{host}}/bsProtocol/{{resource}}/{{filename}}/{{opponent}} HTTP/1.1
+
+###
+// session end-point
+#@resource = session
+
+GET {{host}}/bsProtocol/{{resource}} HTTP/1.1
+
+###
+// session with latency parameter end-point
+#@latency = 2000
+
+GET {{host}}/bsProtocol/{{resource}}/{{latency}} HTTP/1.1
+
+###
+// session with session-id parameter end-point
+#@sessionID = AFE333DD33E8
+
+DELETE {{host}}/bsProtocol/{{resource}}/{{sessionID}} HTTP/1.1
+
+###
+// target end-point with req body containing sessionID and tile
+#@resource = target
+#@tile = J3
+
+POST {{host}}/bsProtocol/{{resource}} HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+    "sessionID": "{{sessionID}}",
+    "tile": "{{tile}}"
+}

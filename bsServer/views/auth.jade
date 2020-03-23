@@ -1,0 +1,26 @@
+// * S19 CSCI 470 Web Science
+   * Authentication form for the user
+   * Accepts the passphrase and hidden referer
+   *
+   * Phillip J. Curtiss, Assistant Professor
+   * pcurtiss@mtech.edu, 406-496-4807
+   * Department of Computer Science, Montana Tech
+
+// html5 layout 
+extends layout
+
+block content
+   h1=title
+   p 
+   | Access to the Game Models Requires Authentication 
+   p
+   | Please enter the passphrase to authenticate. 
+  
+   // session form
+   form(method='POST' action='/auth')
+      div.form-group
+         label(for='passphrase') Passphrase:
+         input#pc.form-control(type='password', placeholder='System Passphrase', name='passphrase')
+      // stores the referer url from the bounce query parameter on the /auth url
+      input.form-control(type='hidden', name='referer' value=bounce)
+      button.btn.btn-primary(type='submit') Authenticate

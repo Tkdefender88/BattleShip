@@ -1,0 +1,173 @@
+/**
+ * S19 CSCI470 Web Science
+ * Main Styling for Battleship Game Logic Monitor
+ *
+ * Phillip J. Curtiss, Assistant Professor
+ * Department of Computer Science, Montana Tech
+ * pcurtiss@mtech.edu, 406-496-4807
+ */
+
+
+/*
+  * Default element styling
+  */
+
+* {
+    margin: 0px;
+    padding: 0px;
+}
+
+
+/*
+ * Header area styling
+ */
+
+header {
+    position: fixed;
+    top: 0px;
+    width: 100%;
+    height: 60px;
+    background: darkgreen;
+    overflow: hidden;
+}
+
+header span {
+    margin: auto 0px auto 10px;
+    line-height: 60px;
+    color: white;
+    font-size: 21pt;
+}
+
+header nav {
+    margin: auto 10px auto 0px;
+    line-height: 60px;
+    float: right;
+}
+
+header nav button {
+    padding: 5px;
+    font-size: 10pt;
+    color: darkgreen;
+    border-radius: 4px;
+    border: black;
+}
+
+header nav button:hover {
+    background: lightgreen;
+    color: red;
+}
+
+
+/*
+ * Footer area styling
+ */
+
+footer {
+    position: fixed;
+    bottom: 0px;
+    width: 100%;
+    height: 60px;
+    background: darkgreen;
+    overflow: hidden;
+}
+
+footer span {
+    position: relative;
+    margin: 10px;
+    color: white;
+}
+
+footer span.left {
+    float: left;
+}
+
+footer span.right {
+    float: right;
+}
+
+body {
+    margin: 60px auto 60px auto;
+    background: darkolivegreen;
+    color: white;
+    overflow: hidden;
+}
+
+
+/*
+ * Main page area styling
+ * broken into an article for each ship
+ */
+
+main {
+    position: absolute;
+    top: 60px;
+    bottom: 60px;
+    left: 0px;
+    right: 0px;
+    padding: 25px;
+    overflow-y: auto;
+}
+
+main article {
+    border: solid 1px;
+    border-radius: 5px;
+    border-color: lightgreen;
+    padding: 10px;
+    margin: 15px auto 15px auto;
+}
+
+article>div {
+    color: white;
+}
+
+article>div>output {
+    color: cyan;
+}
+
+.sunk {
+    background: Maroon;
+}
+
+main article.ship {
+    display: grid;
+    grid-template-columns: 50px 100px 100px 50px 100px 100px;
+    grid-template-rows: auto;
+    grid-row-gap: 12px;
+    grid-template-areas: "title title title title title title" "location location location location location location" ". gridTile gridTile . orientation orientation" "hitProfiles hitProfiles hitProfiles hitProfiles hitProfiles hitProfiles" ". playerTile playerTile . opponentTile opponentTile" ". playerHealth playerHealth . opponentHealth opponentHealth";
+}
+
+article>div.shipName {
+    grid-area: title;
+}
+
+article>div.location {
+    grid-area: location;
+}
+
+article>div.gridTile {
+    grid-area: gridTile;
+}
+
+article>div.orientation {
+    grid-area: orientation;
+}
+
+article>div.hitProfiles {
+    grid-area: hitProfiles;
+}
+
+article>div.playerTile {
+    grid-area: playerTile;
+}
+
+article>div.opponentTile {
+    grid-area: opponentTile;
+}
+
+article>div.playerHealth {
+    grid-area: playerHealth;
+}
+
+article>div.opponentHealth {
+    grid-area: opponentHealth;
+}
