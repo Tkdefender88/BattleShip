@@ -1,0 +1,6 @@
+.idea/
+node_modules/
+battleGo/public/
+battleGo/models/
+battleGo/battleGo
+bsServer/public/
