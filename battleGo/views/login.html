@@ -1,0 +1,19 @@
+{{define "content"}}
+<style>
+  .form-signin {
+
+    margin: 10% 40% 20% 40%;
+  }
+  h1 {
+    text-align: center;
+  }
+</style>
+<div class="loginContainer">
+  <form class="form-signin" method="POST" action="/auth/login">
+    <h1 class="h3 mb-3 font-weight-normal">Please Sign in</h1>
+    Username: <input class="form-control" type="text" name="username"><br/>
+    Password: <input class="form-control" type="password" name="password"><br/>
+    <input class="btn btn-lg btn-primary btn-block" type="submit" value="Login">
+  </form>
+</div>
+{{end}}

@@ -1,0 +1,21 @@
+{{define "content"}}
+  <style>
+    .center-message {
+      margin-top: 20%;
+      margin-left: 40%;
+      display: flex;
+      flex-wrap: nowrap;
+      flex-direction: column;
+      justify-content: center;
+      width: 20%;
+    }
+    h1 h2 {
+      text-align: center;
+      place-content: center;
+    }
+  </style>
+  <div class="center-message">
+    <h1>{{.Message}}</h1>
+    <h2>{{.Status}}</h2>
+  </div>
+{{end}}
