@@ -41,7 +41,8 @@ func INTERNALERROR(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusInternalServerError)
 }
 
-func BADREQUEST(w http.ResponseWriter) {
+func BADREQUEST(w http.ResponseWriter, body []byte) {
+	w.Write(body)
 	w.WriteHeader(http.StatusBadRequest)
 }
 
