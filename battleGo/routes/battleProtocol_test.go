@@ -18,7 +18,7 @@ func TestStartBattleMode_NoURL_200(t *testing.T) {
 	router := BattleProtocol{}.Routes()
 	router.ServeHTTP(w, req)
 
-	filename := "../models/stacky"
+	filename := "./models/stacky"
 	stacky, err := ioutil.ReadFile(filename)
 	if err != nil {
 		t.Errorf("Precondition failed, %s doesn't exist", filename)
@@ -60,7 +60,7 @@ func TestStartBattleMode_NotFound_404(t *testing.T) {
 		t.Errorf("Test Failed: Got %d Wanted %d", resp.StatusCode, 404)
 	}
 
-	expected := []byte{123, 34, 102, 105, 108, 101, 110, 97, 109, 101, 34, 58, 34, 102, 111, 111, 98, 111, 105, 34, 125}
+	expected := []byte{123, 34, 102, 105, 108, 101, 110, 97, 109, 101, 34, 58, 34, 102, 111, 111, 98, 111, 105, 34, 125, 10}
 	if string(expected) != string(body) {
 		t.Errorf("Test Failed: Got %s Wanted %s", string(body), string(expected))
 	}
@@ -80,7 +80,7 @@ func TestStartBattleSession_SessionRequest_200(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(reqBody))
 	w := httptest.NewRecorder()
 
-	router := Session{}.Routes()
+	router := (&Session{}).Routes()
 
 	router.ServeHTTP(w, req)
 
@@ -124,5 +124,9 @@ func TestStartBattleSession_SessionRequest_200(t *testing.T) {
 
 	if respBody.Latency != 2000 {
 		t.Errorf("Test Failed, Bad Latency Got %d Want %d", resp.Body, 2000)
+	}
+
+	if battlePhase != true {
+		t.Errorf("Test Failed, Battle state not set. Got %t Want %t", battlePhase, true)
 	}
 }

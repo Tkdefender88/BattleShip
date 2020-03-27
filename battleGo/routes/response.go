@@ -25,28 +25,46 @@ func OK(w http.ResponseWriter) {
 
 // CREATED sets the standard headers and writes status CREATED to the header.
 func CREATED(w http.ResponseWriter) {
+	ContentHeaders(w)
 	w.WriteHeader(http.StatusCreated)
 }
 
 // NOCONTENT sets the standard headers and writes status PUT to the header.
 func NOCONTENT(w http.ResponseWriter) {
+	ContentHeaders(w)
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func NOTFOUND(w http.ResponseWriter) {
+	ContentHeaders(w)
 	w.WriteHeader(http.StatusNotFound)
 }
 
 func INTERNALERROR(w http.ResponseWriter) {
+	ContentHeaders(w)
 	w.WriteHeader(http.StatusInternalServerError)
 }
 
 func BADREQUEST(w http.ResponseWriter, body []byte) {
-	w.Write(body)
+	ContentHeaders(w)
 	w.WriteHeader(http.StatusBadRequest)
+	w.Write(body)
+}
+
+func FORBIDDEN(w http.ResponseWriter, body []byte) {
+	ContentHeaders(w)
+	w.WriteHeader(http.StatusForbidden)
+	w.Write(body)
+}
+
+func PRECONDITIONFAIL(w http.ResponseWriter) {
+	ContentHeaders(w)
+	w.WriteHeader(http.StatusPreconditionFailed)
+	w.Write([]byte{})
 }
 
 func UNAUTHORIZED(w http.ResponseWriter, msg ErrorMsg) {
+	ContentHeaders(w)
 	w.WriteHeader(http.StatusUnauthorized)
 
 	msg.Status = http.StatusUnauthorized

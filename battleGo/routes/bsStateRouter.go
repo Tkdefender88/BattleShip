@@ -130,15 +130,8 @@ func (rs BsStateResource) List(w http.ResponseWriter, r *http.Request) {
 		fileList,
 	}
 
-	b, err := json.Marshal(res)
-	if err != nil {
-		log.Println(err)
-		INTERNALERROR(w)
-		return
-	}
-
-	w.Write(b)
 	OK(w)
+	json.NewEncoder(w).Encode(res)
 }
 
 func (rs BsStateResource) Get(w http.ResponseWriter, r *http.Request) {
@@ -153,15 +146,8 @@ func (rs BsStateResource) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	d, err := ioutil.ReadFile(target)
-	if err != nil {
-		log.Println(err)
-		INTERNALERROR(w)
-		return
-	}
-
-	ContentHeaders(w)
-	w.Write(d)
+	OK(w)
+	json.NewEncoder(w).Encode(target)
 }
 
 func (rs BsStateResource) Delete(w http.ResponseWriter, r *http.Request) {

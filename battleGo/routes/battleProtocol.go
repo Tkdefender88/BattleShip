@@ -16,20 +16,32 @@ import (
 	"github.com/go-chi/chi"
 )
 
-type BattleProtocol struct{}
+var (
+	battlePhase = false
+)
 
-type Session struct {
-	OpponentURL string `json:"opponentURL"`
-	Latency     int    `json:"latency"`
-}
+type (
+	// BattleProtocol is the struct responsible for managing the /battle endpoint
+	BattleProtocol struct{}
 
-type SessionResource struct {
-	Session string   `json:"session"`
-	Roll    int      `json:"roll"`
-	Names   []string `json:"names"`
-	Epoch   int64    `json:"epoc"`
-	Latency int      `json:"latency"`
-}
+	//Session manages the session resource for responses to the /session endpoint
+	Session struct {
+		Session    string   `json:"session"`
+		Roll       int      `json:"roll"`
+		Names      []string `json:"names"`
+		Epoch      int64    `json:"epoc"`
+		Latency    int      `json:"latency"`
+		activeSesh bool
+	}
+
+	//SessionRequest is used for unmarshalling the post request body to the /session endpoint
+	SessionRequest struct {
+		// OpponentURL is the URL of the opponent that is requesting a match
+		OpponentURL string `json:"opponentURL"`
+		// Latency is the time to wait between sending requests to the opponents /target endpoint
+		Latency int `json:"latency"`
+	}
+)
 
 func (rs BattleProtocol) Routes() chi.Router {
 	r := chi.NewRouter()
@@ -44,15 +56,43 @@ func (rs BattleProtocol) Routes() chi.Router {
 	return r
 }
 
-func (rs Session) Routes() chi.Router {
+func (rs *Session) Routes() chi.Router {
 	r := chi.NewRouter()
+
+	r.Use(BattlePhase)
+	r.Use(rs.ActiveSessionCheck)
 
 	r.Post("/", rs.Post)
 
 	return r
 }
 
-func (rs Session) Post(w http.ResponseWriter, r *http.Request) {
+func BattlePhase(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !battlePhase {
+			PRECONDITIONFAIL(w)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (rs *Session) ActiveSessionCheck(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if rs.activeSesh {
+			body, _ := json.Marshal(struct {
+				Opponent []string `json:"opponent"`
+			}{
+				Opponent: rs.Names,
+			})
+			FORBIDDEN(w, body)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (rs *Session) Post(w http.ResponseWriter, r *http.Request) {
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
@@ -60,40 +100,43 @@ func (rs Session) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := json.Unmarshal(reqBody, &rs); err != nil {
+	sessionReq := SessionRequest{}
+
+	if err := json.Unmarshal(reqBody, &sessionReq); err != nil {
 		log.Println(err)
 		BADREQUEST(w, reqBody)
 		return
 	}
 	local := "https://csdept16.mtech.edu:30124"
 
-	sesh := SessionResource{}
-	sesh.Epoch = time.Now().UnixNano() / int64(time.Millisecond)
-	sesh.Session = GetMD5Hash(local + r.RemoteAddr + strconv.Itoa(int(sesh.Epoch)))
-	sesh.Names = []string{"Justin's Server", "Opponent Server"}
+	rs.Epoch = time.Now().UnixNano() / int64(time.Millisecond)
+	rs.Session = GetMD5Hash(local + r.RemoteAddr + strconv.Itoa(int(rs.Epoch)))
+	rs.Names = []string{"Justin's Server", "Opponent Server"}
 
-	if rs.Latency <= 10000 && rs.Latency >= 2000 {
-		sesh.Latency = rs.Latency
+	if sessionReq.Latency <= 10000 && sessionReq.Latency >= 2000 {
+		rs.Latency = sessionReq.Latency
 	} else {
-		sesh.Latency = int(5000 * time.Millisecond)
+		rs.Latency = int(5000 * time.Millisecond)
 	}
 
 	rand.Seed(time.Now().UTC().UnixNano())
-	sesh.Roll = rand.Intn(2)
+	rs.Roll = rand.Intn(2)
 
-	respBody, err := json.Marshal(sesh)
+	respBody, err := json.Marshal(rs)
 	if err != nil {
 		INTERNALERROR(w)
 		return
 	}
 
-	w.Write(respBody)
+	rs.activeSesh = true
+
+	_, _ = w.Write(respBody)
 }
 
 func (rs BattleProtocol) Get(w http.ResponseWriter, r *http.Request) {
 	filename := chi.URLParam(r, "filename")
 
-	target := filepath.Join("../models", filename)
+	target := filepath.Join("./models", filename)
 
 	if _, err := os.Stat(target); os.IsNotExist(err) {
 		resp := struct {
@@ -102,22 +145,20 @@ func (rs BattleProtocol) Get(w http.ResponseWriter, r *http.Request) {
 			Filename: filename,
 		}
 
-		body, _ := json.Marshal(resp)
-
 		w.WriteHeader(http.StatusNotFound)
-		w.Write(body)
+		json.NewEncoder(w).Encode(resp)
 		return
 	}
 
-	d, err := ioutil.ReadFile(target)
+	body, err := ioutil.ReadFile(target)
 	if err != nil {
 		log.Println(err)
 		INTERNALERROR(w)
 		return
 	}
-
-	ContentHeaders(w)
-	w.Write(d)
+	battlePhase = true
+	OK(w)
+	w.Write(body)
 }
 
 func GetMD5Hash(text string) string {
