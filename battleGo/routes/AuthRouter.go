@@ -119,7 +119,7 @@ func (ar AuthResource) LoginPOST(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, referer, http.StatusFound)
 	} else {
 		errorMsg := ErrorMsg{Message: "Login Failed"}
-		UNAUTHORIZED(w, errorMsg)
+		UNAUTHORIZEDPage(w, errorMsg)
 	}
 }
 
