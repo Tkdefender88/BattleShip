@@ -26,8 +26,6 @@ func (rs BattleProtocol) Routes() chi.Router {
 	r.Route("/{filename}", func(r chi.Router) {
 		r.Get("/", rs.Get)
 		//r.Get("/{url}", rs.GetURL)
-		//r.Delete("/", rs.Delete)
-		//r.PostSession("/", rs.PostSession)
 	})
 
 	return r

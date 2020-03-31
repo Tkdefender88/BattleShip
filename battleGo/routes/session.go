@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	"gitlab.cs.mtech.edu/jbak/bsStatePersist/battleGo/solver"
 )
 
 type (
@@ -40,6 +41,7 @@ type (
 
 		// value to keep track if a session is active
 		activeSesh bool
+		strategy   solver.Strategy
 	}
 	//SessionRequest is used for unmarshalling the post request body to the /session endpoint
 	SessionRequest struct {
