@@ -14,7 +14,7 @@ func TestStartBattleMode_NoURL_200(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/stacky", nil)
 	w := httptest.NewRecorder()
 
-	router := BattleProtocol{}.Routes()
+	router := (&SessionResource{}).Routes()
 	router.ServeHTTP(w, req)
 
 	filename := "./models/stacky"
@@ -45,7 +45,7 @@ func TestStartBattleMode_NotFound_404(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/fooboi", nil)
 	w := httptest.NewRecorder()
 
-	router := BattleProtocol{}.Routes()
+	router := (&SessionResource{}).Routes()
 	router.ServeHTTP(w, req)
 
 	resp := w.Result()

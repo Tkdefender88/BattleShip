@@ -13,18 +13,9 @@ import (
 	"strconv"
 	"time"
 
+	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/BattleState"
+	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/solver"
 	"github.com/go-chi/chi"
-	"gitlab.cs.mtech.edu/jbak/bsStatePersist/battleGo/BattleState"
-	"gitlab.cs.mtech.edu/jbak/bsStatePersist/battleGo/solver"
-)
-
-const (
-	Miss       = "MISS"
-	Carrier    = "CARRIER"
-	BattleShip = "BATTLESHIP"
-	Cruiser    = "CRUISER"
-	Submarine  = "SUBMARINE"
-	Destroyer  = "DESTROYER"
 )
 
 type (
@@ -172,7 +163,7 @@ func (rs *SessionResource) PostTarget(w http.ResponseWriter, r *http.Request) {
 	resp := &TargetResource{}
 
 	if !hit {
-		resp.Status = Miss
+		resp.Status = BattleState.Miss
 		resp.Tile = req.Tile
 		resp.Disposition = "INPROGRESS"
 		rs.bsState.Misses = append(rs.bsState.Misses, req.Tile)
@@ -241,7 +232,7 @@ func (rs *SessionResource) Target() {
 		fmt.Printf("Error: %+v", err)
 	}
 
-	if resp.Status != Miss {
+	if resp.Status != BattleState.Miss {
 		rs.strategy.ConfirmShot(resp.Tile, true)
 	} else {
 		rs.strategy.ConfirmShot(resp.Tile, false)

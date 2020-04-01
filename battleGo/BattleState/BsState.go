@@ -1,6 +1,13 @@
 package BattleState
 
-import "gitlab.cs.mtech.edu/jbak/bsStatePersist/battleGo/routes"
+const (
+	Miss       = "MISS"
+	Carrier    = "CARRIER"
+	BattleShip = "BATTLESHIP"
+	Cruiser    = "CRUISER"
+	Submarine  = "SUBMARINE"
+	Destroyer  = "DESTROYER"
+)
 
 type Ship struct {
 	// Name of the ship, Carrier, Battleship etc.
@@ -43,25 +50,25 @@ func (bs *BsState) Hit(target string) (bool, string) {
 	tar := placementFromPrettyString([]rune(target))
 	carrier := calculatePositions(bs.Carrier)
 	if targetHitShip(tar, carrier) {
-		return true, routes.Carrier
+		return true, Carrier
 	}
 	battleship := calculatePositions(bs.Battleship)
 	if targetHitShip(tar, battleship) {
-		return true, routes.BattleShip
+		return true, BattleShip
 	}
 	cruiser := calculatePositions(bs.Cruiser)
 	if targetHitShip(tar, cruiser) {
-		return true, routes.Cruiser
+		return true, Cruiser
 	}
 	submarine := calculatePositions(bs.Submarine)
 	if targetHitShip(tar, submarine) {
-		return true, routes.Submarine
+		return true, Submarine
 	}
 	destroyer := calculatePositions(bs.Destroyer)
 	if targetHitShip(tar, destroyer) {
-		return true, routes.Destroyer
+		return true, Destroyer
 	}
-	return false, routes.Miss
+	return false, Miss
 }
 
 func targetHitShip(target []int, placement [][]int) bool {

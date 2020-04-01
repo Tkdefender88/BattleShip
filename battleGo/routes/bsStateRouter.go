@@ -9,8 +9,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/BattleState"
 	"github.com/go-chi/chi"
-	"gitlab.cs.mtech.edu/jbak/bsStatePersist/battleGo/BattleState"
 )
 
 type BsStateResource struct{}

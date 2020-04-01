@@ -9,7 +9,7 @@ import (
 	"os"
 	"testing"
 
-	"gitlab.cs.mtech.edu/jbak/bsStatePersist/battleGo/solver"
+	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/solver"
 )
 
 func TestStartBattleSession_SessionRequest_200(t *testing.T) {
@@ -91,8 +91,8 @@ func TestStartBattleSession_SessionRequest_200(t *testing.T) {
 		t.Errorf("Test Failed, Bad Latency Got %d Want %d", resp.Body, 2000)
 	}
 
-	if battlePhase != true {
-		t.Errorf("Test Failed, Battle state not set. Got %t Want %t", battlePhase, true)
+	if s.battlePhase != true {
+		t.Errorf("Test Failed, Battle state not set. Got %t Want %t", s.battlePhase, true)
 	}
 }
 

@@ -19,9 +19,9 @@ import (
 	"os/signal"
 	"time"
 
+	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/routes"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"gitlab.cs.mtech.edu/jbak/bsStatePersist/battleGo/routes"
 )
 
 const (
