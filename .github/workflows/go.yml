@@ -31,7 +31,8 @@ jobs:
         fi
 
     - name: Build
-      run: go build -v ./battleGo/ -o ./battleGo/battleGo
+      working-directory: ./battleGo
+      run: go build -v -o battleGo .
       
     - name: Test
       run: go test -v gitea.justinbak.com/juicetin/bsStatePersist/battleGo/routes
