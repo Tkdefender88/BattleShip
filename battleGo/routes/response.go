@@ -1,7 +1,9 @@
 package routes
 
 import (
+	"encoding/json"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 )
@@ -17,6 +19,11 @@ func ContentHeaders(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 }
 
+func OKReader(w http.ResponseWriter, body interface{}) {
+	OK(w)
+	json.NewEncoder(w).Encode(body)
+}
+
 // OK sets the standard headers and writes status OK to the header.
 func OK(w http.ResponseWriter) {
 	ContentHeaders(w)
@@ -25,27 +32,57 @@ func OK(w http.ResponseWriter) {
 
 // CREATED sets the standard headers and writes status CREATED to the header.
 func CREATED(w http.ResponseWriter) {
+	ContentHeaders(w)
 	w.WriteHeader(http.StatusCreated)
 }
 
 // NOCONTENT sets the standard headers and writes status PUT to the header.
 func NOCONTENT(w http.ResponseWriter) {
+	ContentHeaders(w)
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func NOTFOUND(w http.ResponseWriter) {
+	ContentHeaders(w)
 	w.WriteHeader(http.StatusNotFound)
 }
 
 func INTERNALERROR(w http.ResponseWriter) {
+	ContentHeaders(w)
 	w.WriteHeader(http.StatusInternalServerError)
 }
 
-func BADREQUEST(w http.ResponseWriter) {
+func BADREQUESTReader(w http.ResponseWriter, body io.Reader) {
+	ContentHeaders(w)
 	w.WriteHeader(http.StatusBadRequest)
+	_, _ = io.Copy(w, body)
 }
 
-func UNAUTHORIZED(w http.ResponseWriter, msg ErrorMsg) {
+func BADREQUEST(w http.ResponseWriter, body []byte) {
+	ContentHeaders(w)
+	w.WriteHeader(http.StatusBadRequest)
+	w.Write(body)
+}
+
+func FORBIDDEN(w http.ResponseWriter, body []byte) {
+	ContentHeaders(w)
+	w.WriteHeader(http.StatusForbidden)
+	w.Write(body)
+}
+
+func PRECONDITIONFAIL(w http.ResponseWriter) {
+	ContentHeaders(w)
+	w.WriteHeader(http.StatusPreconditionFailed)
+	w.Write([]byte{})
+}
+
+func UNAUTHORIZED(w http.ResponseWriter) {
+	ContentHeaders(w)
+	w.WriteHeader(http.StatusUnauthorized)
+}
+
+func UNAUTHORIZEDPage(w http.ResponseWriter, msg ErrorMsg) {
+	ContentHeaders(w)
 	w.WriteHeader(http.StatusUnauthorized)
 
 	msg.Status = http.StatusUnauthorized

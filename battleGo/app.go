@@ -41,15 +41,22 @@ func main() {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
-	//r.Use(middlewares.Session)
+	//r.Use(middlewares.SessionResource)
 
 	// Set a timeout value on the request context, to signal when the request has timed out
 	r.Use(middleware.Timeout(60 * time.Second))
 
+	session, err := routes.NewSession()
+	if err != nil {
+		log.Printf("%+v", err)
+		return
+	}
+
 	FileServer(r)
 	//r.Mount("/events/", s)
-	r.Mount("/bsState/", routes.BsStateResource{}.Routes())
-	r.Mount("/auth/", routes.AuthResource{}.Routes())
+	r.Mount("/bsState", routes.BsStateResource{}.Routes())
+	r.Mount("/auth", routes.AuthResource{}.Routes())
+	r.Mount("/", session.Routes())
 
 	srv := &http.Server{
 		Addr: ":" + addr,

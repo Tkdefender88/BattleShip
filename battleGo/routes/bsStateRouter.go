@@ -10,48 +10,10 @@ import (
 	"path/filepath"
 
 	"github.com/go-chi/chi"
+	"gitlab.cs.mtech.edu/jbak/bsStatePersist/battleGo/BattleState"
 )
 
 type BsStateResource struct{}
-
-type BsState struct {
-	Destroyer struct {
-		Name        string     `json:"_name"`
-		Size        int        `json:"_size"`
-		Placed      bool       `json:"_placed"`
-		Placement   []int      `json:"_placement"`
-		HitProfiles [][]string `json:"hitprofiles"`
-	} `json:"destroyer"`
-	Submarine struct {
-		Name        string     `json:"_name"`
-		Size        int        `json:"_size"`
-		Placed      bool       `json:"_placed"`
-		Placement   []int      `json:"_placement"`
-		HitProfiles [][]string `json:"hitprofiles"`
-	} `json:"submarine"`
-	Cruiser struct {
-		Name        string     `json:"_name"`
-		Size        int        `json:"_size"`
-		Placed      bool       `json:"_placed"`
-		Placement   []int      `json:"_placement"`
-		HitProfiles [][]string `json:"hitprofiles"`
-	} `json:"cruiser"`
-	Battleship struct {
-		Name        string     `json:"_name"`
-		Size        int        `json:"_size"`
-		Placed      bool       `json:"_placed"`
-		Placement   []int      `json:"_placement"`
-		HitProfiles [][]string `json:"hitprofiles"`
-	} `json:"battleship"`
-	Carrier struct {
-		Name        string     `json:"_name"`
-		Size        int        `json:"_size"`
-		Placed      bool       `json:"_placed"`
-		Placement   []int      `json:"_placement"`
-		HitProfiles [][]string `json:"hitprofiles"`
-	} `json:"carrier"`
-	Misses []string `json:"misses"`
-}
 
 const (
 	modelsDir = "./models/"
@@ -76,7 +38,7 @@ func (rs BsStateResource) Routes() chi.Router {
 
 func (rs BsStateResource) Post(w http.ResponseWriter, r *http.Request) {
 	filename := chi.URLParam(r, "filename")
-	bs := &BsState{}
+	bs := &BattleState.BsState{}
 
 	bytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -89,7 +51,7 @@ func (rs BsStateResource) Post(w http.ResponseWriter, r *http.Request) {
 	// Unmarshal body to ensure it fits the structure of a bs state
 	if err := json.Unmarshal(bytes, bs); err != nil {
 		log.Println(err)
-		BADREQUEST(w)
+		BADREQUEST(w, bytes)
 		return
 	}
 
@@ -130,15 +92,8 @@ func (rs BsStateResource) List(w http.ResponseWriter, r *http.Request) {
 		fileList,
 	}
 
-	b, err := json.Marshal(res)
-	if err != nil {
-		log.Println(err)
-		INTERNALERROR(w)
-		return
-	}
-
-	w.Write(b)
 	OK(w)
+	json.NewEncoder(w).Encode(res)
 }
 
 func (rs BsStateResource) Get(w http.ResponseWriter, r *http.Request) {
@@ -153,15 +108,8 @@ func (rs BsStateResource) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	d, err := ioutil.ReadFile(target)
-	if err != nil {
-		log.Println(err)
-		INTERNALERROR(w)
-		return
-	}
-
-	ContentHeaders(w)
-	w.Write(d)
+	OK(w)
+	json.NewEncoder(w).Encode(target)
 }
 
 func (rs BsStateResource) Delete(w http.ResponseWriter, r *http.Request) {
