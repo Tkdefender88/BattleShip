@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	"gitlab.cs.mtech.edu/jbak/bsStatePersist/battleGo/solver"
 )
 
 func TestStartBattleSession_SessionRequest_200(t *testing.T) {
@@ -26,6 +28,7 @@ func TestStartBattleSession_SessionRequest_200(t *testing.T) {
 
 	s := &SessionResource{
 		activeSesh: false,
+		strategy:   solver.NewStrategy(),
 	}
 
 	router := s.Routes()
@@ -96,7 +99,7 @@ func TestStartBattleSession_SessionRequest_200(t *testing.T) {
 func TestPostTarget_ValidTarget_OpponentAccept(t *testing.T) {
 	b, _ := json.Marshal(
 		struct {
-			Session string `json:"session-id"`
+			Session string `json:"session"`
 			Tile    string `json:"tile"`
 		}{
 			Session: "validsession",

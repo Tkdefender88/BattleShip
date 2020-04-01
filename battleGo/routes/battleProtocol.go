@@ -2,7 +2,6 @@ package routes
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -11,28 +10,18 @@ import (
 	"github.com/go-chi/chi"
 )
 
-var (
-	battlePhase = false
-)
-
 type (
 	// BattleProtocol is the struct responsible for managing the /battle endpoint
 	BattleProtocol struct{}
 )
 
-func (rs BattleProtocol) Routes() chi.Router {
-	r := chi.NewRouter()
-
-	r.Route("/{filename}", func(r chi.Router) {
-		r.Get("/", rs.Get)
-		//r.Get("/{url}", rs.GetURL)
-	})
-
-	return r
-}
-
-func (rs BattleProtocol) Get(w http.ResponseWriter, r *http.Request) {
+func (rs SessionResource) Get(w http.ResponseWriter, r *http.Request) {
 	filename := chi.URLParam(r, "filename")
+
+	url := chi.URLParam(r, "url")
+	if url != "" {
+
+	}
 
 	target := filepath.Join("./models", filename)
 
@@ -48,13 +37,14 @@ func (rs BattleProtocol) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := ioutil.ReadFile(target)
+	reader, err := os.Open(target)
 	if err != nil {
 		log.Println(err)
 		INTERNALERROR(w)
 		return
 	}
-	battlePhase = true
-	OK(w)
-	w.Write(body)
+
+	_ = json.NewDecoder(reader).Decode(rs.bsState)
+	rs.battlePhase = true
+	OKReader(w, rs.bsState)
 }

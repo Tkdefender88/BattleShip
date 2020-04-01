@@ -1,5 +1,7 @@
 package BattleState
 
+import "gitlab.cs.mtech.edu/jbak/bsStatePersist/battleGo/routes"
+
 type Ship struct {
 	// Name of the ship, Carrier, Battleship etc.
 	Name string `json:"_name"`
@@ -36,30 +38,30 @@ func (bs *BsState) Valid() bool {
 
 // Hit checks if a targeted shot hits any of ships on the players
 // board. If there is a hit it returns true and the name of the hit
-// ship. Otherwise false and an empty string
+// ship. Otherwise false and the string "MISS"
 func (bs *BsState) Hit(target string) (bool, string) {
 	tar := placementFromPrettyString([]rune(target))
 	carrier := calculatePositions(bs.Carrier)
 	if targetHitShip(tar, carrier) {
-		return true, "carrier"
+		return true, routes.Carrier
 	}
 	battleship := calculatePositions(bs.Battleship)
 	if targetHitShip(tar, battleship) {
-		return true, "battleship"
+		return true, routes.BattleShip
 	}
 	cruiser := calculatePositions(bs.Cruiser)
 	if targetHitShip(tar, cruiser) {
-		return true, "cruiser"
+		return true, routes.Cruiser
 	}
 	submarine := calculatePositions(bs.Submarine)
 	if targetHitShip(tar, submarine) {
-		return true, "submarine"
+		return true, routes.Submarine
 	}
 	destroyer := calculatePositions(bs.Destroyer)
 	if targetHitShip(tar, destroyer) {
-		return true, "destroyer"
+		return true, routes.Destroyer
 	}
-	return false, ""
+	return false, routes.Miss
 }
 
 func targetHitShip(target []int, placement [][]int) bool {
