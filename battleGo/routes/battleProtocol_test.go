@@ -20,7 +20,7 @@ func TestStartBattleMode_NoURL_200(t *testing.T) {
 	filename := "./models/stacky"
 	stacky, err := ioutil.ReadFile(filename)
 	if err != nil {
-		t.Errorf("Precondition failed, %s doesn't exist", filename)
+		t.Errorf("Precondition failed, %s doesn't exist: %+v\n", filename, err)
 		return
 	}
 

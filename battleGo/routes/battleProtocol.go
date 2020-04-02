@@ -34,6 +34,7 @@ func (rs *SessionResource) Get(w http.ResponseWriter, r *http.Request) {
 func (rs *SessionResource) GetURL(w http.ResponseWriter, r *http.Request) {
 	filename := chi.URLParam(r, "filename")
 	if err := rs.readBattleState(w, filename); err != nil {
+		log.Println(err)
 		return
 	}
 	rs.battlePhase = true
