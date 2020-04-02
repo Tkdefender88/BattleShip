@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -58,10 +59,10 @@ func BADREQUESTReader(w http.ResponseWriter, body io.Reader) {
 	_, _ = io.Copy(w, body)
 }
 
-func BADREQUEST(w http.ResponseWriter, body []byte) {
+func BADREQUEST(w http.ResponseWriter, body string) {
 	ContentHeaders(w)
 	w.WriteHeader(http.StatusBadRequest)
-	w.Write(body)
+	_, _ = fmt.Fprintln(w, body)
 }
 
 func FORBIDDEN(w http.ResponseWriter, body []byte) {

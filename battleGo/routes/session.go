@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -105,18 +106,22 @@ func (rs *SessionResource) ActiveSessionCheck(next http.Handler) http.Handler {
 func (rs *SessionResource) Routes() chi.Router {
 	r := chi.NewRouter()
 
-	r.Use(rs.BattlePhase)
-	r.Use(rs.ActiveSessionCheck)
+	r.With(rs.ActiveSessionCheck).Delete("/{session-id}", rs.DeleteSession)
+	r.With(rs.BattlePhase, rs.ActiveSessionCheck).Post("/", rs.PostSession)
 
-	r.Delete("/session/{session-id}", rs.DeleteSession)
-	r.Post("/session", rs.PostSession)
-	r.Post("/target", rs.PostTarget)
+	return r
+}
 
-	r.Route("/battle/{filename}", func(r chi.Router) {
-		r.Get("/", rs.Get)
-		r.Get("/{url}", rs.Get)
-	})
+func (rs *SessionResource) BattleRoute() chi.Router {
+	r := chi.NewRouter()
+	r.Get("/{filename}", rs.Get)
+	r.Get("/{filename}/{url}", rs.GetURL)
+	return r
+}
 
+func (rs *SessionResource) TargetRoute() chi.Router {
+	r := chi.NewRouter()
+	r.With(rs.BattlePhase, rs.ActiveSessionCheck).Post("/", rs.PostTarget)
 	return r
 }
 
@@ -124,7 +129,7 @@ func (rs *SessionResource) DeleteSession(w http.ResponseWriter, r *http.Request)
 	session := chi.URLParam(r, "session-id")
 
 	if session != rs.Session {
-		BADREQUEST(w, []byte(session))
+		BADREQUEST(w, session)
 		return
 	}
 
@@ -176,6 +181,39 @@ func (rs *SessionResource) PostTarget(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
+func (rs *SessionResource) StartSession() {
+	client := http.Client{}
+
+	body, _ := json.Marshal(SessionRequest{
+		OpponentURL: "https://csdept16.mtech.edu:30124",
+		Latency:     5000,
+	})
+
+	req, err := http.NewRequest(http.MethodPost, "https://"+rs.opponentURL+"/session", bytes.NewReader(body))
+	if err != nil {
+		log.Printf("Error %+v\n", err)
+		return
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Error %+v\n", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Error %+v\n", err)
+		return
+	}
+
+	if err := json.Unmarshal(b, rs); err != nil {
+		log.Printf("Error %+v\n", err)
+		return
+	}
+}
+
 func (rs *SessionResource) PostSession(w http.ResponseWriter, r *http.Request) {
 	req := &SessionRequest{}
 	err := json.NewDecoder(r.Body).Decode(req)
@@ -201,7 +239,8 @@ func (rs *SessionResource) PostSession(w http.ResponseWriter, r *http.Request) {
 	rs.Roll = rand.Intn(2)
 
 	if rs.Roll == 0 {
-		rs.Target()
+		log.Println("Our turn first, firing shot")
+		go rs.Target()
 	}
 
 	json.NewEncoder(w).Encode(rs)
