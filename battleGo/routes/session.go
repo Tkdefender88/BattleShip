@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/BattleState"
@@ -38,6 +39,9 @@ type (
 		bsState BattleState.BsState
 		// determines how the server responds to certain requests
 		battlePhase bool
+		// event server
+		events  *sse.Server
+		eventID int
 	}
 	//SessionRequest is used for unmarshalling the post request body to the /session endpoint
 	SessionRequest struct {
@@ -76,6 +80,10 @@ func NewSession() (*SessionResource, error) {
 		activeSesh: false,
 		strategy:   solver.NewStrategy(),
 	}, nil
+}
+
+func (rs *SessionResource) RegisterEventSource(events *sse.Server) {
+	rs.events = events
 }
 
 func (rs *SessionResource) BattlePhase(next http.Handler) http.Handler {
@@ -155,8 +163,6 @@ func (rs *SessionResource) PostTarget(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// For now, until I have a functional battleship algorithm
-	// this will be the only check to return a 200
 	if rs.Session != req.Session {
 		fmt.Println(rs.Session, req.Session)
 		UNAUTHORIZED(w)
@@ -177,10 +183,13 @@ func (rs *SessionResource) PostTarget(w http.ResponseWriter, r *http.Request) {
 		resp.Tile = req.Tile
 	}
 
+	rs.UpdateClient()
+
 	OK(w)
 	json.NewEncoder(w).Encode(resp)
 }
 
+<<<<<<< Updated upstream
 func (rs *SessionResource) StartSession() {
 	client := http.Client{}
 
@@ -212,6 +221,16 @@ func (rs *SessionResource) StartSession() {
 		log.Printf("Error %+v\n", err)
 		return
 	}
+=======
+func (rs *SessionResource) UpdateClient() {
+	w := &strings.Builder{}
+	err := json.NewEncoder(w).Encode(&rs.bsState)
+	if err != nil {
+		log.Printf("Error occured sending event message: %+v\n", err)
+		return
+	}
+	rs.events.SendMessage("/events/updates", sse.SimpleMessage(w.String()))
+>>>>>>> Stashed changes
 }
 
 func (rs *SessionResource) PostSession(w http.ResponseWriter, r *http.Request) {
@@ -258,7 +277,7 @@ func (rs *SessionResource) Target() {
 	}
 
 	b, _ := json.Marshal(body)
-	r, err := http.Post(rs.opponentURL+"/target", "application/json", bytes.NewReader(b))
+	r, err := http.Post("https://"+rs.opponentURL+"/target", "application/json", bytes.NewReader(b))
 	if err != nil {
 		log.Println("err", err)
 		return
@@ -278,7 +297,7 @@ func (rs *SessionResource) Target() {
 	}
 
 	if resp.Disposition == "WIN" {
-		rs.Delete()
+		go rs.Delete()
 	}
 }
 
@@ -305,6 +324,7 @@ func (rs *SessionResource) Delete() {
 		log.Printf("err %+v\n", err)
 		return
 	}
+	rs.battlePhase = false
 	log.Printf("The game lasted for %d ms\n", body.Duration)
 }
 

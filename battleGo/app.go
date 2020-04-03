@@ -1,23 +1,13 @@
 package main
 
-//s := sse.NewServer(nil)
-//defer s.Shutdown()
-/*
-	go func() {
-		for {
-			s.SendMessage("/events/my-channel", sse.SimpleMessage(time.Now().Format("2006/02/01/ 15:04:05")))
-			time.Sleep(5 * time.Second)
-		}
-	}()
-*/
-
 import (
-	"context"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+
+	"context"
 
 	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/routes"
 	"github.com/go-chi/chi"
@@ -46,14 +36,27 @@ func main() {
 	// Set a timeout value on the request context, to signal when the request has timed out
 	r.Use(middleware.Timeout(60 * time.Second))
 
+	events := sse.NewServer(nil)
+	defer events.Shutdown()
+
 	session, err := routes.NewSession()
+	session.RegisterEventSource(events)
 	if err != nil {
 		log.Printf("%+v", err)
 		return
 	}
 
+	/*
+		go func() {
+			for {
+				s.SendMessage("/events/my-channel", sse.SimpleMessage(time.Now().Format("2006/02/01/ 15:04:05")))
+				time.Sleep(5 * time.Second)
+			}
+		}()
+	*/
+
 	FileServer(r)
-	//r.Mount("/events/", s)
+	r.Mount("/events/", events)
 	r.Mount("/bsState", routes.BsStateResource{}.Routes())
 	r.Mount("/auth", routes.AuthResource{}.Routes())
 	r.Mount("/session", session.Routes())
