@@ -40,9 +40,6 @@ type (
 		bsState BattleState.BsState
 		// determines how the server responds to certain requests
 		battlePhase bool
-		// event server
-		events  *sse.Server
-		eventID int
 	}
 
 	//SessionRequest is used for unmarshalling the post request body to the /session endpoint
@@ -75,6 +72,10 @@ type (
 	}
 )
 
+var (
+	eventServer *sse.Server
+)
+
 // NewSession createss a new SessionResource object.
 func NewSession() *SessionResource {
 	hostName, err := os.Hostname()
@@ -88,10 +89,10 @@ func NewSession() *SessionResource {
 	}
 }
 
-// RegisterEventSource sets the SessionResource sseServer object to the given
-// events object.
-func (rs *SessionResource) RegisterEventSource(events *sse.Server) {
-	rs.events = events
+// EventServer sets the eventServer object and returns it
+func EventServer() *sse.Server {
+	eventServer = sse.NewServer(nil)
+	return eventServer
 }
 
 // BattlePhase is middleware to block target and session requests if the server
@@ -266,7 +267,7 @@ func (rs *SessionResource) UpdateClient() {
 		log.Printf("Error occured sending event message: %+v\n", err)
 		return
 	}
-	rs.events.SendMessage("/events/updates", sse.SimpleMessage(w.String()))
+	eventServer.SendMessage("/events/updates", sse.SimpleMessage(w.String()))
 }
 
 // PostSession handles a POST request /session and builds a new game session

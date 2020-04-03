@@ -10,7 +10,6 @@ import (
 	"context"
 
 	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/routes"
-	"github.com/alexandrevicenzi/go-sse"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 )
@@ -37,11 +36,7 @@ func main() {
 	// Set a timeout value on the request context, to signal when the request has timed out
 	r.Use(middleware.Timeout(60 * time.Second))
 
-	events := sse.NewServer(nil)
-	defer events.Shutdown()
-
 	session := routes.NewSession()
-	session.RegisterEventSource(events)
 
 	/*
 		go func() {
@@ -53,7 +48,7 @@ func main() {
 	*/
 
 	FileServer(r)
-	r.Mount("/events/", events)
+	r.Mount("/events/", routes.EventServer())
 	r.Mount("/bsState", routes.BsStateResource{}.Routes())
 	r.Mount("/auth", routes.AuthResource{}.Routes())
 	r.Mount("/session", session.Routes())
