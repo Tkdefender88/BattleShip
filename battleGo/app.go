@@ -56,7 +56,9 @@ func main() {
 	//r.Mount("/events/", s)
 	r.Mount("/bsState", routes.BsStateResource{}.Routes())
 	r.Mount("/auth", routes.AuthResource{}.Routes())
-	r.Mount("/", session.Routes())
+	r.Mount("/session", session.Routes())
+	r.Mount("/target", session.TargetRoute())
+	r.Mount("/battle", session.BattleRoute())
 
 	srv := &http.Server{
 		Addr: ":" + addr,

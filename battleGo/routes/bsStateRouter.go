@@ -51,7 +51,7 @@ func (rs BsStateResource) Post(w http.ResponseWriter, r *http.Request) {
 	// Unmarshal body to ensure it fits the structure of a bs state
 	if err := json.Unmarshal(bytes, bs); err != nil {
 		log.Println(err)
-		BADREQUEST(w, bytes)
+		BADREQUEST(w, string(bytes))
 		return
 	}
 
