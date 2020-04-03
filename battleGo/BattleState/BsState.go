@@ -25,16 +25,38 @@ type Ship struct {
 	HitProfiles [][]string `json:"hitprofiles"`
 }
 
+// BsState represents the current battleship game state.
+// sent to the client to update the view
 type BsState struct {
-	Destroyer  Ship `json:"destroyer"`
-	Submarine  Ship `json:"submarine"`
-	Cruiser    Ship `json:"cruiser"`
-	Battleship Ship `json:"battleship"`
-	Carrier    Ship `json:"carrier"`
+	Destroyer  *Ship `json:"destroyer"`
+	Submarine  *Ship `json:"submarine"`
+	Cruiser    *Ship `json:"cruiser"`
+	Battleship *Ship `json:"battleship"`
+	Carrier    *Ship `json:"carrier"`
 	// Misses tracks the missed shots on the board
 	Misses []string `json:"misses"`
 }
 
+// NewShip creates a new ship object of size, size
+func NewShip() *Ship {
+	hp := make([][]string, 2)
+	return &Ship{
+		HitProfiles: hp,
+	}
+}
+
+// NewBsState creates a new BsState object with all the ships initialized
+func NewBsState() *BsState {
+	return &BsState{
+		Destroyer:  NewShip(),
+		Submarine:  NewShip(),
+		Cruiser:    NewShip(),
+		Battleship: NewShip(),
+		Carrier:    NewShip(),
+	}
+}
+
+// Valid ensures the user has selected a ship placement that is valid for a game
 func (bs *BsState) Valid() bool {
 	return bs.Destroyer.Placed &&
 		bs.Submarine.Placed &&
@@ -47,28 +69,41 @@ func (bs *BsState) Valid() bool {
 // board. If there is a hit it returns true and the name of the hit
 // ship. Otherwise false and the string "MISS"
 func (bs *BsState) Hit(target string) (bool, string) {
-	tar := placementFromPrettyString([]rune(target))
+	tar := placementFromPrettyString(target)
 	carrier := calculatePositions(bs.Carrier)
 	if targetHitShip(tar, carrier) {
+		bs.Carrier.HitProfiles[0] = append(bs.Carrier.HitProfiles[0], target)
 		return true, Carrier
 	}
 	battleship := calculatePositions(bs.Battleship)
 	if targetHitShip(tar, battleship) {
+		bs.Battleship.HitProfiles[0] = append(bs.Battleship.HitProfiles[0], target)
 		return true, BattleShip
 	}
 	cruiser := calculatePositions(bs.Cruiser)
 	if targetHitShip(tar, cruiser) {
+		bs.Cruiser.HitProfiles[0] = append(bs.Cruiser.HitProfiles[0], target)
 		return true, Cruiser
 	}
 	submarine := calculatePositions(bs.Submarine)
 	if targetHitShip(tar, submarine) {
+		bs.Submarine.HitProfiles[0] = append(bs.Submarine.HitProfiles[0], target)
 		return true, Submarine
 	}
 	destroyer := calculatePositions(bs.Destroyer)
 	if targetHitShip(tar, destroyer) {
+		bs.Destroyer.HitProfiles[0] = append(bs.Destroyer.HitProfiles[0], target)
 		return true, Destroyer
 	}
+	bs.Misses = append(bs.Misses, target)
 	return false, Miss
+}
+
+// Sunk calculates if a particular ship is sunk
+// returns two booleans the first for the player's ship and the second for the
+// opponents ship.
+func (s Ship) Sunk() (bool, bool) {
+	return len(s.HitProfiles[0]) == s.Size, len(s.HitProfiles[1]) == s.Size
 }
 
 func targetHitShip(target []int, placement [][]int) bool {
@@ -80,7 +115,7 @@ func targetHitShip(target []int, placement [][]int) bool {
 	return false
 }
 
-func calculatePositions(ship Ship) [][]int {
+func calculatePositions(ship *Ship) [][]int {
 	pos := make([][]int, ship.Size)
 	for i := range pos {
 		pos[i] = make([]int, 2)
@@ -88,21 +123,22 @@ func calculatePositions(ship Ship) [][]int {
 	for i := 0; i < ship.Size; i++ {
 		if ship.Placement[2] == 1 { // vertical ship check
 			pos[i] = []int{
-				ship.Placement[0],
-				ship.Placement[1] + i,
+				ship.Placement[0] - i,
+				ship.Placement[1],
 			}
 		} else {
 			pos[i] = []int{
-				ship.Placement[0] + i,
-				ship.Placement[1],
+				ship.Placement[0],
+				ship.Placement[1] + i,
 			}
 		}
 	}
 	return pos
 }
 
-func placementFromPrettyString(target []rune) []int {
-	row := int(target[0]) - 65
-	col := int(target[0]) - 48
+func placementFromPrettyString(target string) []int {
+	t := []rune(target)
+	row := int(t[0]) - 65
+	col := int(t[0]) - 48
 	return []int{row, col}
 }

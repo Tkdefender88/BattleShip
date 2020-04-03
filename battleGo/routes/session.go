@@ -17,6 +17,7 @@ import (
 
 	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/BattleState"
 	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/solver"
+	"github.com/alexandrevicenzi/go-sse"
 	"github.com/go-chi/chi"
 )
 
@@ -43,6 +44,7 @@ type (
 		events  *sse.Server
 		eventID int
 	}
+
 	//SessionRequest is used for unmarshalling the post request body to the /session endpoint
 	SessionRequest struct {
 		// OpponentURL is the URL of the opponent that is requesting a match
@@ -51,6 +53,7 @@ type (
 		Latency int `json:"latency"`
 	}
 
+	// TargetResource represents the response to a request to the /target endpoint
 	TargetResource struct {
 		// Status contains information of either a miss
 		// or the name of the ship that was hit
@@ -64,28 +67,35 @@ type (
 		Disposition string `json:"disposition"`
 	}
 
+	// TargetRequest represents the body of a request sent to the /target endpoint
+	// used during the battle phase when players are firing at eachothers ships.
 	TargetRequest struct {
 		Session string `json:"session"`
 		Tile    string `json:"tile"`
 	}
 )
 
-func NewSession() (*SessionResource, error) {
+// NewSession createss a new SessionResource object.
+func NewSession() *SessionResource {
 	hostName, err := os.Hostname()
 	if err != nil {
-		return nil, err
+		hostName = "csdept16"
 	}
 	return &SessionResource{
 		Names:      []string{hostName, "Justin"},
 		activeSesh: false,
 		strategy:   solver.NewStrategy(),
-	}, nil
+	}
 }
 
+// RegisterEventSource sets the SessionResource sseServer object to the given
+// events object.
 func (rs *SessionResource) RegisterEventSource(events *sse.Server) {
 	rs.events = events
 }
 
+// BattlePhase is middleware to block target and session requests if the server
+// is not in phase 2, battle phase.
 func (rs *SessionResource) BattlePhase(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !rs.battlePhase {
@@ -96,9 +106,30 @@ func (rs *SessionResource) BattlePhase(next http.Handler) http.Handler {
 	})
 }
 
+// ActiveSessionCheck is a middleware to ensure that requests have a valid session
+// if there is an active game occuring.
 func (rs *SessionResource) ActiveSessionCheck(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if rs.activeSesh {
+		s := &struct {
+			Session string `json:"session"`
+		}{}
+
+		bodyBytes, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Printf("Error: %+v\n", err)
+			INTERNALERROR(w)
+			return
+		}
+		r.Body.Close()
+
+		err = json.Unmarshal(bodyBytes, s)
+		if err != nil {
+			BADREQUESTReader(w, ioutil.NopCloser(bytes.NewBuffer(bodyBytes)))
+		}
+
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
+		if rs.activeSesh && s.Session != rs.Session {
 			body, _ := json.Marshal(struct {
 				Opponent []string `json:"opponent"`
 			}{
@@ -111,6 +142,7 @@ func (rs *SessionResource) ActiveSessionCheck(next http.Handler) http.Handler {
 	})
 }
 
+// Routes sets up all the routes for the /session endpoint
 func (rs *SessionResource) Routes() chi.Router {
 	r := chi.NewRouter()
 
@@ -120,6 +152,7 @@ func (rs *SessionResource) Routes() chi.Router {
 	return r
 }
 
+// BattleRoute sets up the endpoints for the /battle endpoint
 func (rs *SessionResource) BattleRoute() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/{filename}", rs.Get)
@@ -127,12 +160,14 @@ func (rs *SessionResource) BattleRoute() chi.Router {
 	return r
 }
 
+// TargetRoute sets up the endpoints to the /target endpoint
 func (rs *SessionResource) TargetRoute() chi.Router {
 	r := chi.NewRouter()
 	r.With(rs.BattlePhase, rs.ActiveSessionCheck).Post("/", rs.PostTarget)
 	return r
 }
 
+// DeleteSession tears down a session after a game is completed.
 func (rs *SessionResource) DeleteSession(w http.ResponseWriter, r *http.Request) {
 	session := chi.URLParam(r, "session-id")
 
@@ -151,10 +186,12 @@ func (rs *SessionResource) DeleteSession(w http.ResponseWriter, r *http.Request)
 		Duration: time.Since(int64ToTime(rs.Epoch)),
 	}
 
-	rs = &SessionResource{}
+	rs = NewSession()
 	OKReader(w, resp)
 }
 
+// PostTarget checks if the target the opponent just specified is a hit or a miss
+// responds with which ship was hit and if the game has eneded.
 func (rs *SessionResource) PostTarget(w http.ResponseWriter, r *http.Request) {
 	req := &TargetRequest{}
 
@@ -184,12 +221,14 @@ func (rs *SessionResource) PostTarget(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rs.UpdateClient()
+	go rs.Target()
 
 	OK(w)
 	json.NewEncoder(w).Encode(resp)
 }
 
-<<<<<<< Updated upstream
+// StartSession sends a new post request to the opponents /session endpoint to
+// try and establish a new game session between the two servers
 func (rs *SessionResource) StartSession() {
 	client := http.Client{}
 
@@ -211,17 +250,15 @@ func (rs *SessionResource) StartSession() {
 	}
 	defer resp.Body.Close()
 
-	b, err := ioutil.ReadAll(resp.Body)
+	err = json.NewDecoder(resp.Body).Decode(rs)
 	if err != nil {
 		log.Printf("Error %+v\n", err)
 		return
 	}
+}
 
-	if err := json.Unmarshal(b, rs); err != nil {
-		log.Printf("Error %+v\n", err)
-		return
-	}
-=======
+// UpdateClient will send and SSE message to the client with any state changes
+// from the battle
 func (rs *SessionResource) UpdateClient() {
 	w := &strings.Builder{}
 	err := json.NewEncoder(w).Encode(&rs.bsState)
@@ -230,9 +267,10 @@ func (rs *SessionResource) UpdateClient() {
 		return
 	}
 	rs.events.SendMessage("/events/updates", sse.SimpleMessage(w.String()))
->>>>>>> Stashed changes
 }
 
+// PostSession handles a POST request /session and builds a new game session
+// between the requester and the server.
 func (rs *SessionResource) PostSession(w http.ResponseWriter, r *http.Request) {
 	req := &SessionRequest{}
 	err := json.NewDecoder(r.Body).Decode(req)
@@ -266,6 +304,8 @@ func (rs *SessionResource) PostSession(w http.ResponseWriter, r *http.Request) {
 	rs.activeSesh = true
 }
 
+// Target sends a target request out. Uses the strategy object to calculate the
+// next shot and then confirmes if the shot was a hit or a miss from the response
 func (rs *SessionResource) Target() {
 	time.Sleep(time.Millisecond * time.Duration(rs.Latency))
 
@@ -301,6 +341,7 @@ func (rs *SessionResource) Target() {
 	}
 }
 
+// Delete requests that the current session be terminated.
 func (rs *SessionResource) Delete() {
 	client := http.Client{}
 	r, err := http.NewRequest(http.MethodDelete, rs.opponentURL+"/session/"+rs.Session, nil)

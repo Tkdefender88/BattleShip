@@ -10,6 +10,7 @@ import (
 	"context"
 
 	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/routes"
+	"github.com/alexandrevicenzi/go-sse"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 )
@@ -39,12 +40,8 @@ func main() {
 	events := sse.NewServer(nil)
 	defer events.Shutdown()
 
-	session, err := routes.NewSession()
+	session := routes.NewSession()
 	session.RegisterEventSource(events)
-	if err != nil {
-		log.Printf("%+v", err)
-		return
-	}
 
 	/*
 		go func() {

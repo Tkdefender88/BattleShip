@@ -47,7 +47,7 @@ func (rs *SessionResource) GetURL(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rs *SessionResource) readBattleState(w http.ResponseWriter, filename string) error {
-	target := filepath.Join("../models", filename)
+	target := filepath.Join("./models", filename)
 
 	if _, err := os.Stat(target); os.IsNotExist(err) {
 		resp := struct {
