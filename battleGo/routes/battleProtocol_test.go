@@ -17,7 +17,7 @@ func TestStartBattleMode_NoURL_200(t *testing.T) {
 	router := (&SessionResource{}).BattleRoute()
 	router.ServeHTTP(w, req)
 
-	filename := "./models/stacky"
+	filename := "../models/stacky"
 	stacky, err := ioutil.ReadFile(filename)
 	if err != nil {
 		t.Errorf("Precondition failed, %s doesn't exist: %+v\n", filename, err)

@@ -15,9 +15,24 @@ type (
 	BattleProtocol struct{}
 )
 
+// Get handles the /battle route where the optional parameter for the URL
+// is not included
 func (rs *SessionResource) Get(w http.ResponseWriter, r *http.Request) {
 	filename := chi.URLParam(r, "filename")
 	if err := rs.readBattleState(w, filename); err != nil {
+		return
+	}
+
+	rs.battlePhase = true
+	OKReader(w, rs.bsState)
+}
+
+// GetURL handles the /battle route where the optional parameter for the URL
+// is included
+func (rs *SessionResource) GetURL(w http.ResponseWriter, r *http.Request) {
+	filename := chi.URLParam(r, "filename")
+	if err := rs.readBattleState(w, filename); err != nil {
+		log.Println(err)
 		return
 	}
 
@@ -31,18 +46,8 @@ func (rs *SessionResource) Get(w http.ResponseWriter, r *http.Request) {
 	OKReader(w, rs.bsState)
 }
 
-func (rs *SessionResource) GetURL(w http.ResponseWriter, r *http.Request) {
-	filename := chi.URLParam(r, "filename")
-	if err := rs.readBattleState(w, filename); err != nil {
-		log.Println(err)
-		return
-	}
-	rs.battlePhase = true
-	OKReader(w, rs.bsState)
-}
-
 func (rs *SessionResource) readBattleState(w http.ResponseWriter, filename string) error {
-	target := filepath.Join("./models", filename)
+	target := filepath.Join("../models", filename)
 
 	if _, err := os.Stat(target); os.IsNotExist(err) {
 		resp := struct {
