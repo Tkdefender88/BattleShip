@@ -1,6 +1,7 @@
-package BattleState
+package battlestate
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -52,25 +53,6 @@ func TestCalculatePositions(t *testing.T) {
 	}
 }
 
-func TestPlacementFromPrettyString(t *testing.T) {
-	table := []struct {
-		prettyString string
-		placement    []int
-	}{
-		{
-			"A0",
-			[]int{0, 0},
-		},
-	}
-
-	for _, c := range table {
-		o := placementFromPrettyString(c.prettyString)
-		if o[0] != c.placement[0] && o[1] != c.placement[1] {
-			t.Errorf("Test Failed, Got %+v Wanted %+v", o, c.placement)
-		}
-	}
-}
-
 func Test_targetHitShip(t *testing.T) {
 	type args struct {
 		target    []int
@@ -115,6 +97,35 @@ func Test_targetHitShip(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := targetHitShip(tt.args.target, tt.args.placement); got != tt.want {
 				t.Errorf("targetHitShip() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_placementFromPrettyString(t *testing.T) {
+	type args struct {
+		target string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []int
+	}{
+		{
+			"A0 to 0, 0",
+			args{"A0"},
+			[]int{0, 0},
+		},
+		{
+			"B4 to 1, 4",
+			args{"B4"},
+			[]int{1, 4},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := placementFromPrettyString(tt.args.target); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("placementFromPrettyString() = %v, want %v", got, tt.want)
 			}
 		})
 	}

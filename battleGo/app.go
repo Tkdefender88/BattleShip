@@ -38,15 +38,6 @@ func main() {
 
 	session := routes.NewSession()
 
-	/*
-		go func() {
-			for {
-				s.SendMessage("/events/my-channel", sse.SimpleMessage(time.Now().Format("2006/02/01/ 15:04:05")))
-				time.Sleep(5 * time.Second)
-			}
-		}()
-	*/
-
 	FileServer(r)
 	r.Mount("/events/", routes.EventServer())
 	r.Mount("/bsState", routes.BsStateResource{}.Routes())

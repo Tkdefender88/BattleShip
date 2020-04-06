@@ -1,4 +1,4 @@
-package BattleState
+package battlestate
 
 const (
 	Miss       = "MISS"
@@ -102,8 +102,19 @@ func (bs *BsState) Hit(target string) (bool, string) {
 // Sunk calculates if a particular ship is sunk
 // returns two booleans the first for the player's ship and the second for the
 // opponents ship.
-func (s Ship) Sunk() (bool, bool) {
+func (s *Ship) Sunk() (bool, bool) {
 	return len(s.HitProfiles[0]) == s.Size, len(s.HitProfiles[1]) == s.Size
+}
+
+// GameLost returns true if all the player's ships have been sunk
+func (bs *BsState) GameLost() bool {
+	carrier, _ := bs.Carrier.Sunk()
+	battleship, _ := bs.Battleship.Sunk()
+	cruiser, _ := bs.Cruiser.Sunk()
+	submarine, _ := bs.Submarine.Sunk()
+	destroyer, _ := bs.Destroyer.Sunk()
+
+	return carrier && battleship && cruiser && submarine && destroyer
 }
 
 func targetHitShip(target []int, placement [][]int) bool {
@@ -139,6 +150,6 @@ func calculatePositions(ship *Ship) [][]int {
 func placementFromPrettyString(target string) []int {
 	t := []rune(target)
 	row := int(t[0]) - 65
-	col := int(t[0]) - 48
+	col := int(t[1]) - 48
 	return []int{row, col}
 }

@@ -72,6 +72,9 @@ func (rs *SessionResource) readBattleState(w http.ResponseWriter, filename strin
 		INTERNALERROR(w)
 		return err
 	}
+
+	log.Printf("%+v\n", rs.bsState.Carrier)
+
 	if !rs.bsState.Valid() {
 		BADREQUEST(w, "Invalid game state selected")
 		return err

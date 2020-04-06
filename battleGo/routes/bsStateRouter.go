@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/BattleState"
+	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/battlestate"
 	"github.com/go-chi/chi"
 )
 
@@ -38,7 +38,7 @@ func (rs BsStateResource) Routes() chi.Router {
 
 func (rs BsStateResource) Post(w http.ResponseWriter, r *http.Request) {
 	filename := chi.URLParam(r, "filename")
-	bs := &BattleState.BsState{}
+	bs := &battlestate.BsState{}
 
 	bytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {

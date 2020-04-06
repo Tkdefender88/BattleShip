@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/BattleState"
+	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/battlestate"
 	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/solver"
 	"github.com/alexandrevicenzi/go-sse"
 	"github.com/go-chi/chi"
@@ -37,7 +37,7 @@ type (
 		// the url to send target requests to
 		opponentURL string
 		// the current state of the game
-		bsState BattleState.BsState
+		bsState *battlestate.BsState
 		// determines how the server responds to certain requests
 		battlePhase bool
 	}
@@ -212,13 +212,17 @@ func (rs *SessionResource) PostTarget(w http.ResponseWriter, r *http.Request) {
 	resp := &TargetResource{}
 
 	if !hit {
-		resp.Status = BattleState.Miss
+		resp.Status = battlestate.Miss
 		resp.Tile = req.Tile
 		resp.Disposition = "INPROGRESS"
-		rs.bsState.Misses = append(rs.bsState.Misses, req.Tile)
 	} else {
 		resp.Status = ship
 		resp.Tile = req.Tile
+		if rs.bsState.GameLost() {
+			resp.Disposition = "WIN"
+		} else {
+			resp.Disposition = "INPROGRESS"
+		}
 	}
 
 	rs.UpdateClient()
@@ -331,7 +335,7 @@ func (rs *SessionResource) Target() {
 		fmt.Printf("Error: %+v", err)
 	}
 
-	if resp.Status != BattleState.Miss {
+	if resp.Status != battlestate.Miss {
 		rs.strategy.ConfirmShot(resp.Tile, true)
 	} else {
 		rs.strategy.ConfirmShot(resp.Tile, false)
