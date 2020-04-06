@@ -32,11 +32,7 @@ func TestStartBattleSession_SessionRequest_200(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(reqBody))
 	w := httptest.NewRecorder()
 
-	s, err := NewSession()
-	if err != nil {
-		t.Fatalf("Failed to create session %+v\n", err)
-		return
-	}
+	s := NewSession()
 	s.activeSesh = false
 	s.strategy = solver.NewStrategy()
 	s.battlePhase = true
