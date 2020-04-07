@@ -12,12 +12,10 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/battlestate"
 	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/solver"
-	"github.com/alexandrevicenzi/go-sse"
 	"github.com/go-chi/chi"
 )
 
@@ -72,10 +70,6 @@ type (
 	}
 )
 
-var (
-	eventServer *sse.Server
-)
-
 // NewSession createss a new SessionResource object.
 func NewSession() *SessionResource {
 	hostName, err := os.Hostname()
@@ -87,12 +81,6 @@ func NewSession() *SessionResource {
 		activeSesh: false,
 		strategy:   solver.NewStrategy(),
 	}
-}
-
-// EventServer sets the eventServer object and returns it
-func EventServer() *sse.Server {
-	eventServer = sse.NewServer(nil)
-	return eventServer
 }
 
 // BattlePhase is middleware to block target and session requests if the server
@@ -157,7 +145,7 @@ func (rs *SessionResource) Routes() chi.Router {
 func (rs *SessionResource) BattleRoute() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/{filename}", rs.Get)
-	r.Get("/{filename}/{url}", rs.GetURL)
+	r.Get("/{filename}/{url}", rs.UrlParam(rs.Get))
 	return r
 }
 
@@ -225,7 +213,7 @@ func (rs *SessionResource) PostTarget(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	rs.UpdateClient()
+	//krs.UpdateClient()
 	go rs.Target()
 
 	OK(w)
@@ -264,15 +252,16 @@ func (rs *SessionResource) StartSession() {
 
 // UpdateClient will send and SSE message to the client with any state changes
 // from the battle
+/*
 func (rs *SessionResource) UpdateClient() {
-	w := &strings.Builder{}
-	err := json.NewEncoder(w).Encode(&rs.bsState)
+	eventData, err := json.Marshal(rs.bsState)
 	if err != nil {
 		log.Printf("Error occured sending event message: %+v\n", err)
 		return
 	}
-	eventServer.SendMessage("/events/updates", sse.SimpleMessage(w.String()))
+	broker.Notifier <- eventData
 }
+*/
 
 // PostSession handles a POST request /session and builds a new game session
 // between the requester and the server.

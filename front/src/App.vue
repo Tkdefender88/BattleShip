@@ -13,10 +13,10 @@
     </div>
     <div class="Footer">
       <div id="noticeBar">
-        <span id="appCopyright"
-          >&copy; 2020 Department of Computer Science, Montana Tech All rights
-          reserved</span
-        >
+        <span id="appCopyright">
+          &copy; 2020 Department of Computer Science, Montana Tech All rights
+          reserved
+        </span>
         <span id="author">Author: Justin Bak</span>
         <span id="version">version: 0.0.1</span>
       </div>
@@ -81,6 +81,13 @@ export default {
         shipLayer.removeAttribute("id");
       });
     },
+    setupStream() {
+      let es = new EventSource("/events/updates");
+
+      es.onmessage = function(event) {
+        console.log(event.data);
+      };
+    },
     redraw() {
       // get the ships position from 0-99
       var oceanGrid = document.querySelector("#oceanGrid");
@@ -117,6 +124,7 @@ export default {
   created() {
     this.preload();
     this.battleState = new BsState(this.redraw);
+    this.setupStream();
   },
   components: {
     NavBar,

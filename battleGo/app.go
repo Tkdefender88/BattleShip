@@ -27,32 +27,34 @@ func main() {
 
 	r := chi.NewRouter()
 
-	r.Use(middleware.Logger)
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Recoverer)
+	broker := routes.NewServer()
+
+	r.Mount("/events/", broker)
+
+	r.Route("/", func(r chi.Router) {
+		r.Use(middleware.RequestID)
+		r.Use(middleware.RealIP)
+		r.Use(middleware.Recoverer)
+		r.Use(middleware.Logger)
+
+		// Set a timeout value on the request context, to signal when the request has timed out
+		r.Use(middleware.Timeout(60 * time.Second))
+
+		FileServer(r.(*chi.Mux))
+
+		session := routes.NewSession()
+		r.Mount("/bsState", routes.BsStateResource{}.Routes())
+		r.Mount("/auth", routes.AuthResource{}.Routes())
+		r.Mount("/session", session.Routes())
+		r.Mount("/target", session.TargetRoute())
+		r.Mount("/battle", session.BattleRoute())
+	})
+
 	//r.Use(middlewares.SessionResource)
 
-	// Set a timeout value on the request context, to signal when the request has timed out
-	r.Use(middleware.Timeout(60 * time.Second))
-
-	session := routes.NewSession()
-
-	FileServer(r)
-	r.Mount("/events/", routes.EventServer())
-	r.Mount("/bsState", routes.BsStateResource{}.Routes())
-	r.Mount("/auth", routes.AuthResource{}.Routes())
-	r.Mount("/session", session.Routes())
-	r.Mount("/target", session.TargetRoute())
-	r.Mount("/battle", session.BattleRoute())
-
 	srv := &http.Server{
-		Addr: ":" + addr,
-
-		WriteTimeout: RWTimeout,
-		ReadTimeout:  RWTimeout,
-		IdleTimeout:  IdleTimeout,
-		Handler:      r,
+		Addr:    ":" + addr,
+		Handler: r,
 	}
 
 	go func() {
