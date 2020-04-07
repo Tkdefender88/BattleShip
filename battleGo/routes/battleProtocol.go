@@ -15,7 +15,8 @@ type (
 	BattleProtocol struct{}
 )
 
-func (rs *SessionResource) UrlParam(h http.HandlerFunc) http.HandlerFunc {
+// URLParam is a handler wrapper that parses out the optional url parameter
+func (rs *SessionResource) URLParam(h http.HandlerFunc) http.HandlerFunc {
 	return func(response http.ResponseWriter, r *http.Request) {
 
 		url := chi.URLParam(r, "url")

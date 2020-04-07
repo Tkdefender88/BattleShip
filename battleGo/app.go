@@ -47,7 +47,7 @@ func main() {
 
 		r.With(session.BattlePhase, session.ActiveSessionCheck).Post("/target", session.PostTarget)
 		r.Get("/battle/{filename}", session.Get)
-		r.Get("/battle/{filename}/{url}", session.UrlParam(session.Get))
+		r.Get("/battle/{filename}/{url}", session.URLParam(session.Get))
 	})
 
 	//r.Use(middlewares.SessionResource)

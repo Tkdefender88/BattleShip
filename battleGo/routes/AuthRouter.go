@@ -18,9 +18,10 @@ var (
 	}
 )
 
+// AuthResource manages routes for login and authentication
 type AuthResource struct{}
 
-// UserFrom represents the url form encoded post request
+// UserForm represents the url form encoded post request
 // received from the login page.
 type UserForm struct {
 	UName  string
@@ -76,6 +77,7 @@ func hashPw(pwd []byte) [sha256.Size]byte {
 	return sha256.Sum256(pwd)
 }
 
+// Routes returns a router with all the login endpoints
 func (ar AuthResource) Routes() chi.Router {
 	r := chi.NewRouter()
 
@@ -87,6 +89,7 @@ func (ar AuthResource) Routes() chi.Router {
 	return r
 }
 
+// LoginPOST ...
 func (ar AuthResource) LoginPOST(w http.ResponseWriter, r *http.Request) {
 	session, err := Store.Get(r, "BATTLESHIP")
 	if err != nil {
@@ -123,6 +126,7 @@ func (ar AuthResource) LoginPOST(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// LoginGET ...
 func (ar AuthResource) LoginGET(w http.ResponseWriter, r *http.Request) {
 	tmpl := template.Must(template.ParseFiles("views/base.html", "views/login.html"))
 	if err := tmpl.ExecuteTemplate(w, "base.html", nil); err != nil {
