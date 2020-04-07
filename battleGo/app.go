@@ -44,8 +44,10 @@ func main() {
 		r.Mount("/bsState", routes.BsStateResource{}.Routes())
 		r.Mount("/auth", routes.AuthResource{}.Routes())
 		r.Mount("/session", session.Routes())
-		r.Mount("/target", session.TargetRoute())
-		r.Mount("/battle", session.BattleRoute())
+
+		r.With(session.BattlePhase, session.ActiveSessionCheck).Post("/target", session.PostTarget)
+		r.Get("/battle/{filename}", session.Get)
+		r.Get("/battle/{filename}/{url}", session.UrlParam(session.Get))
 	})
 
 	//r.Use(middlewares.SessionResource)

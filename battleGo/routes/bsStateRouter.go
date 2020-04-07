@@ -46,7 +46,7 @@ func (rs BsStateResource) Post(w http.ResponseWriter, r *http.Request) {
 	bytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
-		INTERNALERROR(w)
+		internalError(w)
 		return
 	}
 	defer r.Body.Close()
@@ -54,24 +54,24 @@ func (rs BsStateResource) Post(w http.ResponseWriter, r *http.Request) {
 	// Unmarshal body to ensure it fits the structure of a bs state
 	if err := json.Unmarshal(bytes, bs); err != nil {
 		log.Println(err)
-		BADREQUEST(w, string(bytes))
+		badRequest(w, string(bytes))
 		return
 	}
 
 	b, err := json.Marshal(bs)
 	if err != nil {
 		log.Println(err)
-		INTERNALERROR(w)
+		internalError(w)
 		return
 	}
 
 	if err := ioutil.WriteFile(filepath.Join(modelsDir, filename), b, 0666); err != nil {
 		log.Println(err)
-		INTERNALERROR(w)
+		internalError(w)
 		return
 	}
 
-	CREATED(w)
+	created(w)
 }
 
 // List will respond with a list of the battlestates currently stored on the
@@ -80,7 +80,7 @@ func (rs BsStateResource) List(w http.ResponseWriter, r *http.Request) {
 	files, err := ioutil.ReadDir(filepath.Dir(modelsDir))
 	if err != nil {
 		log.Println(err)
-		INTERNALERROR(w)
+		internalError(w)
 		return
 	}
 
@@ -97,7 +97,7 @@ func (rs BsStateResource) List(w http.ResponseWriter, r *http.Request) {
 		fileList,
 	}
 
-	OK(w)
+	ok(w)
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -110,12 +110,20 @@ func (rs BsStateResource) Get(w http.ResponseWriter, r *http.Request) {
 	if s, err := os.Stat(target); os.IsNotExist(err) {
 		fmt.Println(target)
 		fmt.Println(s)
-		NOTFOUND(w)
+		notFound(w)
+
 		return
 	}
 
-	OK(w)
-	json.NewEncoder(w).Encode(target)
+	file, err := ioutil.ReadFile(target)
+	if err != nil {
+		log.Println(err)
+		internalError(w)
+		return
+	}
+
+	ok(w)
+	w.Write(file)
 }
 
 // Delete will remove a battlestate from the filesystem
@@ -124,15 +132,15 @@ func (rs BsStateResource) Delete(w http.ResponseWriter, r *http.Request) {
 
 	if _, err := os.Stat(filepath.Join(modelsDir, filename)); os.IsNotExist(err) {
 		log.Println(err)
-		NOTFOUND(w)
+		notFound(w)
 		return
 	}
 
 	if err := os.Remove(filepath.Join(modelsDir, filename)); err != nil {
 		log.Println(err)
-		INTERNALERROR(w)
+		internalError(w)
 		return
 	}
 
-	NOCONTENT(w)
+	noContent(w)
 }

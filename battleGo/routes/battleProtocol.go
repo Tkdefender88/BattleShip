@@ -48,23 +48,23 @@ func (rs *SessionResource) Get(w http.ResponseWriter, r *http.Request) {
 	reader, err := os.Open(target)
 	if err != nil {
 		log.Println(err)
-		INTERNALERROR(w)
+		internalError(w)
 		return
 	}
 
 	if err := json.NewDecoder(reader).Decode(&rs.bsState); err != nil {
 		log.Println(err)
-		INTERNALERROR(w)
+		internalError(w)
 		return
 	}
 
 	log.Printf("%+v\n", rs.bsState.Carrier)
 
 	if !rs.bsState.Valid() {
-		BADREQUEST(w, "Invalid game state selected")
+		badRequest(w, "Invalid game state selected")
 		return
 	}
 
 	rs.battlePhase = true
-	OKReader(w, rs.bsState)
+	okReader(w, rs.bsState)
 }

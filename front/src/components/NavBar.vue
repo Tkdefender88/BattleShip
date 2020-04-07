@@ -66,9 +66,9 @@ export default {
         return;
       }
       let that = this;
-      axios.get("bsState/" + model).then(function(resp) {
+      axios.get("/bsState/" + model).then(function(resp) {
+        console.log(resp);
         that.$emit("update:battle-state", resp.data);
-        alert("Loaded model!");
       });
     },
     saveGameBtn() {

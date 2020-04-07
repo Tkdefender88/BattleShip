@@ -64,6 +64,7 @@ export default {
       this.loading = false;
     },
     stateUpdate: function(newState) {
+      console.log(newState);
       this.battleState.carrier.placement = newState.carrier._placement;
       this.battleState.battleship.placement = newState.battleship._placement;
       this.battleState.cruiser.placement = newState.cruiser._placement;

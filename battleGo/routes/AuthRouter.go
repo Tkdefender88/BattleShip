@@ -95,7 +95,7 @@ func (ar AuthResource) LoginPOST(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := r.ParseForm(); err != nil {
-		INTERNALERROR(w)
+		internalError(w)
 	}
 
 	usrPass := r.FormValue("password")
@@ -119,14 +119,14 @@ func (ar AuthResource) LoginPOST(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, referer, http.StatusFound)
 	} else {
 		errorMsg := ErrorMsg{Message: "Login Failed"}
-		UNAUTHORIZEDPage(w, errorMsg)
+		unauthorizedPage(w, errorMsg)
 	}
 }
 
 func (ar AuthResource) LoginGET(w http.ResponseWriter, r *http.Request) {
 	tmpl := template.Must(template.ParseFiles("views/base.html", "views/login.html"))
 	if err := tmpl.ExecuteTemplate(w, "base.html", nil); err != nil {
-		INTERNALERROR(w)
+		internalError(w)
 		log.Println(err)
 	}
 }
