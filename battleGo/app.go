@@ -16,11 +16,9 @@ import (
 
 const (
 	addr             = "30124"
-	RWTimeout        = time.Second * 15
-	IdleTimeout      = time.Second * 60
-	ShutdownDeadline = time.Second * 15
-	//pem              = "/etc/certs/wildcard_cs_mtech_edu.key"
-	//cert             = "/etc/certs/wildcard_cs_mtech_edu.cer"
+	shutdownDeadline = time.Second * 15
+	//pem  = "/etc/certs/wildcard_cs_mtech_edu.key"
+	//cert = "/etc/certs/wildcard_cs_mtech_edu.cer"
 )
 
 func main() {
@@ -40,7 +38,7 @@ func main() {
 		// Set a timeout value on the request context, to signal when the request has timed out
 		r.Use(middleware.Timeout(60 * time.Second))
 
-		FileServer(r.(*chi.Mux))
+		fileServer(r.(*chi.Mux))
 
 		session := routes.NewSession()
 		r.Mount("/bsState", routes.BsStateResource{}.Routes())
@@ -70,21 +68,20 @@ func main() {
 	<-c
 
 	// Create a deadline for tear down
-	ctx, cancel := context.WithTimeout(context.Background(), ShutdownDeadline)
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownDeadline)
 	defer cancel()
 
 	// Shutdown doesn't block if there are no connections, but will otherwise
 	// wait until the timeout before closing connections and shutting down.
 	if err := srv.Shutdown(ctx); err != nil {
 		panic(err)
-		return
 	}
 
 	log.Println("shutting down")
 	os.Exit(0)
 }
 
-func FileServer(router *chi.Mux) {
+func fileServer(router *chi.Mux) {
 	root := "./public"
 
 	fs := http.FileServer(http.Dir(root))
