@@ -34,6 +34,6 @@ jobs:
       working-directory: ./battleGo
       run: go build -v -o battleGo .
       
-    - name: TestRoutes
+    - name: Test
       working-directory: ./battleGo
-      run: go test -v gitea.justinbak.com/juicetin/bsStatePersist/battleGo/routes
+      run: go test -v ./...
