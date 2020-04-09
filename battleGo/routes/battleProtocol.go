@@ -59,8 +59,6 @@ func (rs *SessionResource) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("%+v\n", rs.bsState.Carrier)
-
 	if !rs.bsState.Valid() {
 		badRequest(w, "Invalid game state selected")
 		return

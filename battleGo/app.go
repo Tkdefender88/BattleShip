@@ -25,9 +25,7 @@ func main() {
 
 	r := chi.NewRouter()
 
-	broker := routes.NewServer()
-
-	r.Mount("/events/", broker)
+	r.Mount("/events/", routes.EventBroker)
 
 	r.Route("/", func(r chi.Router) {
 		r.Use(middleware.RequestID)

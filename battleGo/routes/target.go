@@ -32,6 +32,14 @@ type (
 		Session string `json:"session"`
 		Tile    string `json:"tile"`
 	}
+
+	// FireEvent is an event that is sent to the client during the battle phase via
+	// SSE. This gives the client the information needed to update the board.
+	FireEvent struct {
+		Player string `json:"player"`
+		Tile   int    `json:"tile"`
+		Hit    bool   `json:"hit"`
+	}
 )
 
 // PostTarget checks if the target the opponent just specified is a hit or a miss
@@ -68,7 +76,14 @@ func (rs *SessionResource) PostTarget(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	//krs.UpdateClient()
+	index := indexFromTile(req.Tile)
+	event := FireEvent{
+		Player: "player",
+		Tile:   index,
+		Hit:    hit,
+	}
+
+	rs.UpdateClient(event)
 	go rs.Target()
 
 	ok(w)
@@ -81,10 +96,11 @@ func (rs *SessionResource) Target() {
 	time.Sleep(time.Millisecond * time.Duration(rs.Latency))
 
 	index := rs.strategy.FireNext()
+	tile := tileFromIndex(index)
 
 	body := &TargetRequest{
 		Session: rs.Session,
-		Tile:    tileFromIndex(index),
+		Tile:    tile,
 	}
 
 	b, _ := json.Marshal(body)
@@ -107,6 +123,13 @@ func (rs *SessionResource) Target() {
 		rs.strategy.ConfirmShot(resp.Tile, false)
 	}
 
+	event := FireEvent{
+		Player: "opponent",
+		Tile:   index,
+		Hit:    resp.Status != battlestate.Miss,
+	}
+
+	rs.UpdateClient(event)
 	if resp.Disposition == "WIN" {
 		go rs.Delete()
 	}
@@ -115,4 +138,12 @@ func tileFromIndex(index int) string {
 	row := rune((index / 10) + 65)
 	col := rune((index % 10) + 48)
 	return string([]rune{row, col})
+}
+
+func indexFromTile(tile string) (index int) {
+	t := []rune(tile)
+	row := int(t[0]) - 65
+	col := int(t[1]) - 48
+	index = (row * 10) + col
+	return
 }

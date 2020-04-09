@@ -22,7 +22,7 @@ type Broker struct {
 
 // Broker factory
 func NewServer() (broker *Broker) {
-	// Instantiate a broker
+	// Instantiate a EventBroker
 	broker = &Broker{
 		Notifier:       make(chan []byte, 1),
 		newClients:     make(chan chan []byte),
@@ -56,7 +56,7 @@ func (broker *Broker) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	// Each connection registers its own message channel with the Broker's connections registry
 	messageChan := make(chan []byte)
 
-	// Signal the broker that we have a new connection
+	// Signal the EventBroker that we have a new connection
 	broker.newClients <- messageChan
 
 	// Remove this client from the map of connected clients

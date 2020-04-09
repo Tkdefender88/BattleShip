@@ -141,6 +141,14 @@ export default {
   background: url("../../public/images/carrier.png") -181px 0px;
 }
 
+.hit {
+  background: url("../../public/images/hit.png") 0px 0px;
+}
+
+.miss {
+  background: url("../../public/images/miss.png");
+}
+
 .vertical {
   transform: rotate(270deg);
 }

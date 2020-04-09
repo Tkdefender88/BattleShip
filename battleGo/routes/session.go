@@ -48,7 +48,15 @@ type (
 	}
 )
 
-// NewSession createss a new SessionResource object.
+var (
+	EventBroker *Broker
+)
+
+func init() {
+	EventBroker = NewServer()
+}
+
+// NewSession creates a new SessionResource object.
 func NewSession() *SessionResource {
 	hostName, err := os.Hostname()
 	if err != nil {
@@ -174,16 +182,15 @@ func (rs *SessionResource) StartSession() {
 
 // UpdateClient will send and SSE message to the client with any state changes
 // from the battle
-/*
-func (rs *SessionResource) UpdateClient() {
-	eventData, err := json.Marshal(rs.bsState)
+
+func (rs *SessionResource) UpdateClient(event FireEvent) {
+	eventData, err := json.Marshal(&event)
 	if err != nil {
 		log.Printf("Error occured sending event message: %+v\n", err)
 		return
 	}
-	broker.Notifier <- eventData
+	EventBroker.Notifier <- eventData
 }
-*/
 
 // PostSession handles a POST request /session and builds a new game session
 // between the requester and the server.
