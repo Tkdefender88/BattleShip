@@ -4,9 +4,27 @@
       class="NavBar"
       v-bind:battle-state="this.battleState"
       v-on:update:battle-state="stateUpdate"
+      v-on:battle-modal="showModal"
       v-on:new-game="newGame"
     ></nav-bar>
     <ship-panel class="ShipPanel"></ship-panel>
+
+    <modal v-show="isModalVisible" @close="closeModal" @done="submit">
+      <div slot="header">
+        <h2>Start a Battle!</h2>
+      </div>
+      <div id="modalBody" slot="body">
+        <form>
+          <input type="text" id="stateName" name="stateName" value="stacky" />
+          <label for="stateName">Battle State</label>
+          <br />
+          <input type="text" id="oppUrl" name="oppUrl" value />
+          <label for="oppUrl">Opponent's URL (optional)</label>
+          <br />
+          <br />
+        </form>
+      </div>
+    </modal>
     <div class="GameArea">
       <game-grid id="oceanGrid" @onPlace="place"></game-grid>
       <game-grid id="targetGrid"></game-grid>
@@ -29,21 +47,49 @@ import NavBar from "./components/NavBar.vue";
 import ShipPanel from "./components/ShipPanel.vue";
 import GameGrid from "./components/GameGrid.vue";
 import BsState from "./bsState";
+import fireEvent from "./fireEvent";
+import modal from "./components/modal.vue";
+import axios from "axios"
 
 export default {
   name: "App",
-  data: () => ({
-    loading: true,
-    loadedAssets: [],
-    assets: [
-      "images/carrier.png",
-      "images/battleship.png",
-      "images/cruiser.png",
-      "images/submarine.png",
-      "images/destroyer.png"
-    ]
-  }),
+  data() {
+    return {
+      loading: true,
+      loadedAssets: [],
+      isModalVisible: false,
+      assets: [
+        "images/carrier.png",
+        "images/battleship.png",
+        "images/cruiser.png",
+        "images/submarine.png",
+        "images/destroyer.png"
+      ]
+    };
+  },
   methods: {
+    submit() {
+      let modelName = document.getElementById("stateName").value;
+      let url = document.getElementById("oppUrl").value;
+      console.log(url);
+      console.log(modelName);
+      let endpoint = url === "" ? "/battle/"+modelName : "/battle/"+modelName+"/"+url;
+      let that = this;
+      axios.get(endpoint ).then((resp) => {
+        that.stateUpdate(resp.data);
+      }).catch(reason => {
+        alert("An error occured: " + reason);
+      });
+      document.getElementById("stateName").value = "stacky";
+      document.getElementById("oppUrl").value = "";
+      this.isModalVisible = false;
+    },
+    showModal() {
+      this.isModalVisible = true;
+    },
+    closeModal() {
+      this.isModalVisible = false;
+    },
     place(e) {
       let cell = e.target.parentNode;
       let coordinate = cell.querySelector(".bgLayer").innerHTML.split("-");
@@ -75,19 +121,36 @@ export default {
     newGame: function() {
       this.battleState = new BsState(this.redraw);
       let oceanGrid = document.querySelector("#oceanGrid");
+      let targetGrid = document.querySelector("#targetGrid");
+
+      targetGrid.children.forEach(cell => {
+        let fxLayer = cell.querySelector(".fxLayer");
+        fxLayer.classList.remove("miss");
+        fxLayer.classList.remove("hit");
+      });
 
       // clear the grid
       oceanGrid.children.forEach(cell => {
         let shipLayer = cell.querySelector(".shipLayer");
+        let fxLayer = cell.querySelector(".fxLayer");
         shipLayer.removeAttribute("id");
+        shipLayer.classList.remove("vertical");
+        fxLayer.classList.remove("miss");
+        fxLayer.classList.remove("hit");
       });
     },
     setupStream() {
       let es = new EventSource("/events/updates");
 
-      es.onmessage = function(event) {
-        console.log(event.data);
-      };
+      es.addEventListener(
+        "message",
+        e => {
+            let evt = new fireEvent(JSON.parse(e.data));
+            console.log(e.data);
+            evt.updateGrid();
+        },
+        false
+      );
     },
     redraw() {
       // get the ships position from 0-99
@@ -130,7 +193,8 @@ export default {
   components: {
     NavBar,
     ShipPanel,
-    GameGrid
+    GameGrid,
+    modal
   }
 };
 </script>
@@ -161,8 +225,32 @@ export default {
   background-size: 1000px;
 }
 
+#targetGrid {
+  background: #ad9a5a;
+}
+
 body {
   margin: 0px;
+}
+
+input {
+  padding: 10px;
+  border: solid 1px #e5e5e5;
+  outline: 0;
+  width: 200px;
+  background: #ffffff;
+  margin: 5px;
+  box-shadow: rgba(0,0,0,0.1) 0 0 8px;
+}
+
+input:hover,
+input:focus {
+  border-color: #c9c9c9;
+}
+
+form label {
+  margin-left: 10px;
+  color: #999999;
 }
 
 #app {

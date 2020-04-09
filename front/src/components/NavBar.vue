@@ -5,7 +5,7 @@
         <h1>Battleship</h1>
       </span>
       <span id="appVersion">
-        <h4>Revision: 2020-02-03</h4>
+        <h4>Revision: 2020-04-08</h4>
       </span>
     </div>
 
@@ -26,30 +26,22 @@
           <a @click="aboutBtn" id="AboutBtn" href="#">About</a>
         </div>
       </div>
+      <button type="button" class="btn" @click="openModal">Battle!</button>
     </div>
   </div>
 </template>
 
 <script>
 import axios from "axios";
+
 export default {
   props: {
     battleState: Object
   },
   methods: {
-    ajaxPOST(uri, body, success) {
-      var req = new XMLHttpRequest();
-
-      req.onreadystatechange = function() {
-        if (req.readyState === 3 && req.status === 201) {
-          if (typeof callback === "function") {
-            success(req.responseText);
-          }
-        }
-      };
-
-      req.open("POST", uri, true);
-      req.send(body);
+    openModal() {
+      console.log("foobar");
+      this.$emit("battle-modal");
     },
     helpBtn() {
       alert("Help button pressed");
@@ -84,20 +76,6 @@ export default {
         .catch(err => {
           alert("Error saving: " + err);
         });
-      /*
-      this.ajaxPOST(
-        "bsState/" + modelName,
-        JSON.stringify(this.battleState),
-        resp => {
-          if (resp.code === 201) {
-            alert("Successful save");
-          }
-          if (resp.code === 400) {
-            alert("There was a problem saving");
-          }
-        }
-      );
-      */
     },
     exitGameBtn() {
       alert("exit game button pressed");
@@ -147,8 +125,22 @@ h4 {
   width: 235px;
   display: grid;
   grid-template-rows: 1fr;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   place-items: center;
+}
+
+.btn {
+  display: inline-block;
+  border: none;
+  padding: 10px;
+  margin-left: 5px;
+  margin-bottom: 2px;
+  color: #ffffff;
+  background-color: var(--header-fg);
+  font-size: 16px;
+  border-radius: 3px;
+  min-width: 80px;
+  cursor: pointer;
 }
 
 .dropdown {
