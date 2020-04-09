@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -21,15 +22,20 @@ func TestStartBattleSession_SessionRequest_200(t *testing.T) {
 		Latency:     2000,
 	}
 
-	reqBody, _ := json.Marshal(request)
+	reqBody, err := json.Marshal(request)
+	if err != nil {
+		log.Println(err)
+		t.Fatalf("Failed %+v\n", err)
+		return
+	}
 
-	req := httptest.NewRequest(http.MethodPost, "/session", bytes.NewReader(reqBody))
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(reqBody))
 	w := httptest.NewRecorder()
 
-	s := &SessionResource{
-		activeSesh: false,
-		strategy:   solver.NewStrategy(),
-	}
+	s := NewSession()
+	s.activeSesh = false
+	s.strategy = solver.NewStrategy()
+	s.battlePhase = true
 
 	router := s.Routes()
 
@@ -106,15 +112,16 @@ func TestPostTarget_ValidTarget_OpponentAccept(t *testing.T) {
 			Tile:    "A5",
 		})
 
-	req := httptest.NewRequest(http.MethodPost, "/target", bytes.NewReader(b))
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(b))
 	w := httptest.NewRecorder()
 
 	// Make sure the sessions match
 	s := &SessionResource{
-		Session: "validsession",
+		Session:     "validsession",
+		battlePhase: true,
 	}
 
-	router := s.Routes()
+	router := s.TargetRoute()
 	router.ServeHTTP(w, req)
 
 	resp := w.Result()

@@ -14,13 +14,13 @@ func TestStartBattleMode_NoURL_200(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/stacky", nil)
 	w := httptest.NewRecorder()
 
-	router := (&SessionResource{}).Routes()
+	router := (&SessionResource{}).BattleRoute()
 	router.ServeHTTP(w, req)
 
-	filename := "./models/stacky"
+	filename := "../models/stacky"
 	stacky, err := ioutil.ReadFile(filename)
 	if err != nil {
-		t.Errorf("Precondition failed, %s doesn't exist", filename)
+		t.Errorf("Precondition failed, %s doesn't exist: %+v\n", filename, err)
 		return
 	}
 
@@ -45,7 +45,11 @@ func TestStartBattleMode_NotFound_404(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/fooboi", nil)
 	w := httptest.NewRecorder()
 
-	router := (&SessionResource{}).Routes()
+	s := &SessionResource{
+		battlePhase: true,
+	}
+
+	router := s.BattleRoute()
 	router.ServeHTTP(w, req)
 
 	resp := w.Result()

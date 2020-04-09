@@ -5,7 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"time"
 
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/BattleState"
+	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/battlestate"
 	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/solver"
 	"github.com/go-chi/chi"
 )
@@ -34,10 +34,11 @@ type (
 		// the url to send target requests to
 		opponentURL string
 		// the current state of the game
-		bsState BattleState.BsState
+		bsState *battlestate.BsState
 		// determines how the server responds to certain requests
 		battlePhase bool
 	}
+
 	//SessionRequest is used for unmarshalling the post request body to the /session endpoint
 	SessionRequest struct {
 		// OpponentURL is the URL of the opponent that is requesting a match
@@ -45,86 +46,93 @@ type (
 		// Latency is the time to wait between sending requests to the opponents /target endpoint
 		Latency int `json:"latency"`
 	}
-
-	TargetResource struct {
-		// Status contains information of either a miss
-		// or the name of the ship that was hit
-		// CARRIER BATTLESHIP CRUISER SUBMARINE DESTROYER
-		Status string `json:"status"`
-		// The tile that was hit, in Row Column format
-		// Rows being letters from [A - J] and Columns
-		// being numbers [0 - 9]
-		Tile string `json:"tile"`
-		// The Disposition of the game, either 'INPROGRESS' or 'WIN'
-		Disposition string `json:"disposition"`
-	}
-
-	TargetRequest struct {
-		Session string `json:"session"`
-		Tile    string `json:"tile"`
-	}
 )
 
-func NewSession() (*SessionResource, error) {
+var (
+	EventBroker *Broker
+)
+
+func init() {
+	EventBroker = NewServer()
+}
+
+// NewSession creates a new SessionResource object.
+func NewSession() *SessionResource {
 	hostName, err := os.Hostname()
 	if err != nil {
-		return nil, err
+		hostName = "csdept16"
 	}
 	return &SessionResource{
 		Names:      []string{hostName, "Justin"},
 		activeSesh: false,
 		strategy:   solver.NewStrategy(),
-	}, nil
+	}
 }
 
+// BattlePhase is middleware to block target and session requests if the server
+// is not in phase 2, battle phase.
 func (rs *SessionResource) BattlePhase(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !rs.battlePhase {
-			PRECONDITIONFAIL(w)
+			preconditionFail(w)
 			return
 		}
 		next.ServeHTTP(w, r)
 	})
 }
 
+// ActiveSessionCheck is a middleware to ensure that requests have a valid session
+// if there is an active game occuring.
 func (rs *SessionResource) ActiveSessionCheck(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if rs.activeSesh {
+		s := &struct {
+			Session string `json:"session"`
+		}{}
+
+		bodyBytes, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Printf("Error: %+v\n", err)
+			internalError(w)
+			return
+		}
+		r.Body.Close()
+
+		err = json.Unmarshal(bodyBytes, s)
+		if err != nil {
+			badRequestReader(w, ioutil.NopCloser(bytes.NewBuffer(bodyBytes)))
+		}
+
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
+		if rs.activeSesh && s.Session != rs.Session {
 			body, _ := json.Marshal(struct {
 				Opponent []string `json:"opponent"`
 			}{
 				Opponent: rs.Names,
 			})
-			FORBIDDEN(w, body)
+			forbidden(w, body)
 			return
 		}
 		next.ServeHTTP(w, r)
 	})
 }
 
+// Routes sets up all the routes for the /session endpoint
 func (rs *SessionResource) Routes() chi.Router {
 	r := chi.NewRouter()
 
-	r.Use(rs.BattlePhase)
-	r.Use(rs.ActiveSessionCheck)
-
-	r.Delete("/session/{session-id}", rs.DeleteSession)
-	r.Post("/session", rs.PostSession)
-	r.Post("/target", rs.PostTarget)
-
-	r.Route("/battle/{filename}", func(r chi.Router) {
-		r.Get("/", rs.Get)
-		r.Get("/{url}", rs.Get)
-	})
+	r.With(rs.ActiveSessionCheck).Delete("/{session-id}", rs.DeleteSession)
+	r.With(rs.BattlePhase, rs.ActiveSessionCheck).Post("/", rs.PostSession)
 
 	return r
 }
 
+// DeleteSession tears down a session after a game is completed.
 func (rs *SessionResource) DeleteSession(w http.ResponseWriter, r *http.Request) {
 	session := chi.URLParam(r, "session-id")
 
 	if session != rs.Session {
-		BADREQUEST(w, []byte(session))
+		badRequest(w, session)
 		return
 	}
 
@@ -138,50 +146,60 @@ func (rs *SessionResource) DeleteSession(w http.ResponseWriter, r *http.Request)
 		Duration: time.Since(int64ToTime(rs.Epoch)),
 	}
 
-	rs = &SessionResource{}
-	OKReader(w, resp)
+	rs = NewSession()
+	okReader(w, resp)
 }
 
-func (rs *SessionResource) PostTarget(w http.ResponseWriter, r *http.Request) {
-	req := &TargetRequest{}
+// StartSession sends a new post request to the opponents /session endpoint to
+// try and establish a new game session between the two servers
+func (rs *SessionResource) StartSession() {
+	client := http.Client{}
 
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		BADREQUESTReader(w, r.Body)
+	body, _ := json.Marshal(SessionRequest{
+		OpponentURL: "https://csdept16.mtech.edu:30124",
+		Latency:     5000,
+	})
+
+	req, err := http.NewRequest(http.MethodPost, "https://"+rs.opponentURL+"/session", bytes.NewReader(body))
+	if err != nil {
+		log.Printf("Error %+v\n", err)
 		return
 	}
 
-	// For now, until I have a functional battleship algorithm
-	// this will be the only check to return a 200
-	if rs.Session != req.Session {
-		fmt.Println(rs.Session, req.Session)
-		UNAUTHORIZED(w)
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Error %+v\n", err)
 		return
 	}
+	defer resp.Body.Close()
 
-	hit, ship := rs.bsState.Hit(req.Tile)
-
-	resp := &TargetResource{}
-
-	if !hit {
-		resp.Status = BattleState.Miss
-		resp.Tile = req.Tile
-		resp.Disposition = "INPROGRESS"
-		rs.bsState.Misses = append(rs.bsState.Misses, req.Tile)
-	} else {
-		resp.Status = ship
-		resp.Tile = req.Tile
+	err = json.NewDecoder(resp.Body).Decode(rs)
+	if err != nil {
+		log.Printf("Error %+v\n", err)
+		return
 	}
-
-	OK(w)
-	json.NewEncoder(w).Encode(resp)
 }
 
+// UpdateClient will send and SSE message to the client with any state changes
+// from the battle
+
+func (rs *SessionResource) UpdateClient(event FireEvent) {
+	eventData, err := json.Marshal(&event)
+	if err != nil {
+		log.Printf("Error occured sending event message: %+v\n", err)
+		return
+	}
+	EventBroker.Notifier <- eventData
+}
+
+// PostSession handles a POST request /session and builds a new game session
+// between the requester and the server.
 func (rs *SessionResource) PostSession(w http.ResponseWriter, r *http.Request) {
 	req := &SessionRequest{}
 	err := json.NewDecoder(r.Body).Decode(req)
 	if err != nil {
 		log.Println(err)
-		BADREQUESTReader(w, r.Body)
+		badRequestReader(w, r.Body)
 		return
 	}
 
@@ -201,48 +219,15 @@ func (rs *SessionResource) PostSession(w http.ResponseWriter, r *http.Request) {
 	rs.Roll = rand.Intn(2)
 
 	if rs.Roll == 0 {
-		rs.Target()
+		log.Println("Our turn first, firing shot")
+		go rs.Target()
 	}
 
 	json.NewEncoder(w).Encode(rs)
 	rs.activeSesh = true
 }
 
-func (rs *SessionResource) Target() {
-	time.Sleep(time.Millisecond * time.Duration(rs.Latency))
-
-	index := rs.strategy.FireNext()
-
-	body := &TargetRequest{
-		Session: rs.Session,
-		Tile:    tileFromIndex(index),
-	}
-
-	b, _ := json.Marshal(body)
-	r, err := http.Post(rs.opponentURL+"/target", "application/json", bytes.NewReader(b))
-	if err != nil {
-		log.Println("err", err)
-		return
-	}
-	defer r.Body.Close()
-
-	resp := &TargetResource{}
-
-	if err := json.NewDecoder(r.Body).Decode(resp); err != nil {
-		fmt.Printf("Error: %+v", err)
-	}
-
-	if resp.Status != BattleState.Miss {
-		rs.strategy.ConfirmShot(resp.Tile, true)
-	} else {
-		rs.strategy.ConfirmShot(resp.Tile, false)
-	}
-
-	if resp.Disposition == "WIN" {
-		rs.Delete()
-	}
-}
-
+// Delete requests that the current session be terminated.
 func (rs *SessionResource) Delete() {
 	client := http.Client{}
 	r, err := http.NewRequest(http.MethodDelete, rs.opponentURL+"/session/"+rs.Session, nil)
@@ -266,13 +251,8 @@ func (rs *SessionResource) Delete() {
 		log.Printf("err %+v\n", err)
 		return
 	}
+	rs.battlePhase = false
 	log.Printf("The game lasted for %d ms\n", body.Duration)
-}
-
-func tileFromIndex(index int) string {
-	row := rune((index / 10) + 65)
-	col := rune((index % 10) + 48)
-	return string([]rune{row, col})
 }
 
 func getMD5hash(text string) string {
