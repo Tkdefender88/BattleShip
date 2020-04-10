@@ -48,6 +48,10 @@ type (
 	}
 )
 
+const (
+	PlayerURL = "https://csdept16.mtech.edu:30124"
+)
+
 var (
 	EventBroker *Broker
 )
@@ -156,7 +160,7 @@ func (rs *SessionResource) StartSession() {
 	client := http.Client{}
 
 	body, _ := json.Marshal(SessionRequest{
-		OpponentURL: "https://csdept16.mtech.edu:30124",
+		OpponentURL: PlayerURL,
 		Latency:     5000,
 	})
 
@@ -203,10 +207,8 @@ func (rs *SessionResource) PostSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	local := "https://csdept16.mtech.edu:30124"
-
 	rs.Epoch = milliSecondsTime(time.Now())
-	rs.Session = getMD5hash(local + r.RemoteAddr + strconv.FormatInt(rs.Epoch, 10))
+	rs.Session = getMD5hash(PlayerURL + r.RemoteAddr + strconv.FormatInt(rs.Epoch, 10))
 
 	if req.Latency <= 10000 && req.Latency >= 2000 {
 		rs.Latency = req.Latency
