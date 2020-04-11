@@ -49,7 +49,7 @@ type (
 )
 
 const (
-	PlayerURL = "https://csdept16.mtech.edu:30124"
+	playerURL = "https://csdept16.mtech.edu:30124"
 )
 
 var (
@@ -58,6 +58,32 @@ var (
 
 func init() {
 	EventBroker = NewServer()
+
+	/*
+		go func() {
+			tiles := []int{34, 56, 42, 55, 33, 97}
+			for i := 0; i < 6; i++ {
+				time.Sleep(3 * time.Second)
+				fe := FireEvent{
+					Player: "player",
+					Tile:   tiles[i],
+					Hit:    tiles[i]%2 == 0,
+				}
+				b, _ := json.Marshal(&fe)
+				EventBroker.Notifier <- b
+			}
+			for i := 0; i < 6; i++ {
+				time.Sleep(3 * time.Second)
+				fe := FireEvent{
+					Player: "opponent",
+					Tile:   tiles[i],
+					Hit:    tiles[i]%2 == 0,
+				}
+				b, _ := json.Marshal(&fe)
+				EventBroker.Notifier <- b
+			}
+		}()
+	*/
 }
 
 // NewSession creates a new SessionResource object.
@@ -160,7 +186,7 @@ func (rs *SessionResource) StartSession() {
 	client := http.Client{}
 
 	body, _ := json.Marshal(SessionRequest{
-		OpponentURL: PlayerURL,
+		OpponentURL: playerURL,
 		Latency:     5000,
 	})
 
@@ -184,18 +210,6 @@ func (rs *SessionResource) StartSession() {
 	}
 }
 
-// UpdateClient will send and SSE message to the client with any state changes
-// from the battle
-
-func (rs *SessionResource) UpdateClient(event FireEvent) {
-	eventData, err := json.Marshal(&event)
-	if err != nil {
-		log.Printf("Error occured sending event message: %+v\n", err)
-		return
-	}
-	EventBroker.Notifier <- eventData
-}
-
 // PostSession handles a POST request /session and builds a new game session
 // between the requester and the server.
 func (rs *SessionResource) PostSession(w http.ResponseWriter, r *http.Request) {
@@ -208,7 +222,7 @@ func (rs *SessionResource) PostSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rs.Epoch = milliSecondsTime(time.Now())
-	rs.Session = getMD5hash(PlayerURL + r.RemoteAddr + strconv.FormatInt(rs.Epoch, 10))
+	rs.Session = getMD5hash(playerURL + r.RemoteAddr + strconv.FormatInt(rs.Epoch, 10))
 
 	if req.Latency <= 10000 && req.Latency >= 2000 {
 		rs.Latency = req.Latency

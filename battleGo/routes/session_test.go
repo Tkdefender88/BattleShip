@@ -10,6 +10,9 @@ import (
 	"os"
 	"testing"
 
+	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/battlestate"
+	"github.com/go-chi/chi"
+
 	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/solver"
 )
 
@@ -36,6 +39,16 @@ func TestStartBattleSession_SessionRequest_200(t *testing.T) {
 	s.activeSesh = false
 	s.strategy = solver.NewStrategy()
 	s.battlePhase = true
+
+	bytes, err := ioutil.ReadFile("../models/stacky")
+	if err != nil {
+		t.Fatalf("error occurred: %+v\n", err)
+	}
+	stacky := &battlestate.BsState{}
+	if err := json.Unmarshal(bytes, stacky); err != nil {
+		t.Fatalf("error occurred: %+v\n", err)
+	}
+	s.bsState = stacky
 
 	router := s.Routes()
 
@@ -116,12 +129,24 @@ func TestPostTarget_ValidTarget_OpponentAccept(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	// Make sure the sessions match
-	s := &SessionResource{
-		Session:     "validsession",
-		battlePhase: true,
+	s := NewSession()
+	s.Session = "validsession"
+	s.battlePhase = true
+
+	bytes, err := ioutil.ReadFile("../models/stacky")
+	if err != nil {
+		t.Fatalf("error occurred: %+v\n", err)
+	}
+	stacky := &battlestate.BsState{}
+	if err := json.Unmarshal(bytes, stacky); err != nil {
+		t.Fatalf("error occurred: %+v\n", err)
 	}
 
-	router := s.TargetRoute()
+	s.bsState = stacky
+
+	router := chi.NewRouter()
+	router.Post("/", s.PostTarget)
+
 	router.ServeHTTP(w, req)
 
 	resp := w.Result()

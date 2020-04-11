@@ -48,7 +48,7 @@ export default {
 
 .fxLayer {
   position: absolute;
-  z-index: 3;
+  z-index: 2;
 }
 
 .gridTile {

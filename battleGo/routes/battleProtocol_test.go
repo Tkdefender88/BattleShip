@@ -2,26 +2,70 @@ package routes
 
 import (
 	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/battlestate"
+
+	"github.com/go-chi/chi"
 )
 
 var baseURL = "http://localhost:30124/battle/"
+
+var testStacky = &battlestate.BsState{
+	Destroyer: &battlestate.Ship{
+		Name:        "destroyer",
+		Size:        2,
+		Placed:      true,
+		Placement:   []int{3, 3, 1},
+		HitProfiles: [][]string{},
+	},
+	Carrier: &battlestate.Ship{
+		Name:        "carrier",
+		Size:        5,
+		Placed:      true,
+		Placement:   []int{0, 0, 0},
+		HitProfiles: [][]string{},
+	},
+	Battleship: &battlestate.Ship{
+		Name:        "battleship",
+		Size:        4,
+		Placed:      true,
+		Placement:   []int{1, 0, 0},
+		HitProfiles: [][]string{},
+	},
+	Cruiser: &battlestate.Ship{
+		Name:        "cruiser",
+		Size:        3,
+		Placed:      true,
+		Placement:   []int{2, 0, 0},
+		HitProfiles: [][]string{},
+	},
+	Submarine: &battlestate.Ship{
+		Name:        "submarine",
+		Size:        3,
+		Placed:      true,
+		Placement:   []int{3, 0, 0},
+		HitProfiles: [][]string{},
+	},
+}
 
 func TestStartBattleMode_NoURL_200(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/stacky", nil)
 	w := httptest.NewRecorder()
 
-	router := (&SessionResource{}).BattleRoute()
+	session := NewSession()
+	router := chi.NewRouter()
+	router.Get("/{filename}", session.Get)
+
 	router.ServeHTTP(w, req)
 
-	filename := "../models/stacky"
-	stacky, err := ioutil.ReadFile(filename)
+	stacky, err := json.Marshal(&testStacky)
 	if err != nil {
-		t.Errorf("Precondition failed, %s doesn't exist: %+v\n", filename, err)
-		return
+		t.Fatalf("error occurred: %+v\n", err)
 	}
 
 	resp := w.Result()
@@ -45,11 +89,10 @@ func TestStartBattleMode_NotFound_404(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/fooboi", nil)
 	w := httptest.NewRecorder()
 
-	s := &SessionResource{
-		battlePhase: true,
-	}
+	s := NewSession()
 
-	router := s.BattleRoute()
+	router := chi.NewRouter()
+	router.Get("/{filename}", s.Get)
 	router.ServeHTTP(w, req)
 
 	resp := w.Result()

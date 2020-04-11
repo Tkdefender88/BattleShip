@@ -111,7 +111,6 @@ func Refresh(next http.Handler) http.Handler {
 func Authenticated(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, err := r.Cookie(cookieName)
-		log.Printf("%+v\n", r.Header)
 		if err != nil {
 			if err == http.ErrNoCookie {
 				log.Printf("error %s\n", err)
