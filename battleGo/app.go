@@ -26,26 +26,33 @@ func main() {
 	r := chi.NewRouter()
 
 	r.Mount("/events/", routes.EventBroker)
+	r.Mount("/auth", routes.AuthResource{}.Routes())
 
 	r.Route("/", func(r chi.Router) {
+
 		r.Use(middleware.RequestID)
 		r.Use(middleware.RealIP)
 		r.Use(middleware.Recoverer)
 		r.Use(middleware.Logger)
-
 		// Set a timeout value on the request context, to signal when the request has timed out
 		r.Use(middleware.Timeout(60 * time.Second))
 
-		fileServer(r.(*chi.Mux))
-
 		session := routes.NewSession()
-		r.Mount("/bsState", routes.BsStateResource{}.Routes())
-		r.Mount("/auth", routes.AuthResource{}.Routes())
-		r.Mount("/session", session.Routes())
-
+		// Unsecured routes
+		r.With(session.BattlePhase).Mount("/session", session.Routes())
 		r.With(session.BattlePhase, session.ActiveSessionCheck).Post("/target", session.PostTarget)
-		r.Get("/battle/{filename}", session.Get)
-		r.Get("/battle/{filename}/{url}", session.URLParam(session.Get))
+
+		// Secured routes
+		r.Route("/", func(r chi.Router) {
+			r.Use(routes.Refresh)
+			r.Use(routes.Authenticated)
+
+			fileServer(r)
+			r.With(routes.Refresh, routes.Authenticated).Mount("/bsState", routes.BsStateResource{}.Routes())
+
+			r.With(routes.Refresh, routes.Authenticated).Get("/battle/{filename}", session.Get)
+			r.With(routes.Refresh, routes.Authenticated).Get("/battle/{filename}/{url}", session.URLParam(session.Get))
+		})
 	})
 
 	//r.Use(middlewares.SessionResource)
@@ -81,7 +88,7 @@ func main() {
 	os.Exit(0)
 }
 
-func fileServer(router *chi.Mux) {
+func fileServer(router chi.Router) {
 	root := "./public"
 
 	fs := http.FileServer(http.Dir(root))

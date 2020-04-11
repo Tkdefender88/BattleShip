@@ -134,6 +134,18 @@ func (rs *SessionResource) Target() {
 		go rs.Delete()
 	}
 }
+
+// UpdateClient will send and SSE message to the client with any state changes
+// from the battle
+func (rs *SessionResource) UpdateClient(event FireEvent) {
+	eventData, err := json.Marshal(&event)
+	if err != nil {
+		log.Printf("Error occured sending event message: %+v\n", err)
+		return
+	}
+	EventBroker.Notifier <- eventData
+}
+
 func tileFromIndex(index int) string {
 	row := rune((index / 10) + 65)
 	col := rune((index % 10) + 48)

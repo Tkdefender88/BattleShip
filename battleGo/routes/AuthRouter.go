@@ -5,132 +5,209 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"time"
 
-	"github.com/gorilla/sessions"
+	jwt "github.com/dgrijalva/jwt-go"
 
 	"github.com/go-chi/chi"
 )
 
-var (
-	u = UserForm{
-		UName:  "readBattleState",
-		Passwd: [sha256.Size]byte{106, 36, 36, 56, 2, 151, 190, 194, 141, 236, 10, 63, 147, 82, 160, 95, 82, 86, 84, 183, 204, 221, 186, 123, 40, 129, 211, 30, 166, 7, 5, 74},
+type (
+	Credentials struct {
+		Password string `json:"password"`
+		Username string `json:"username"`
 	}
+	Claims struct {
+		Username string `json:"username"`
+		jwt.StandardClaims
+	}
+	AuthResource struct{}
 )
 
-// AuthResource manages routes for login and authentication
-type AuthResource struct{}
-
-// UserForm represents the url form encoded post request
-// received from the login page.
-type UserForm struct {
-	UName  string
-	Passwd [sha256.Size]byte
-}
-
-//"sv2zSY7WZK3xPPI2FIapggDBcwnUeoAj"
-
-// Store ...
-var Store *sessions.CookieStore
-
-func init() {
-
-	authKeyOne := []byte{179, 17, 111, 242, 236, 58, 163, 144, 110, 204, 183, 105, 45, 240, 97, 71, 181, 45, 162, 89, 60, 186, 69, 248, 230, 203, 110, 225, 22, 47, 233, 3, 247, 108, 105, 246, 183, 74, 155, 199, 108, 40, 118, 73, 7, 117, 163, 178, 51, 221, 54, 207, 52, 181, 148, 30, 129, 134, 149, 60, 29, 28, 190, 78}
-	encryptionKeyOne := []byte{169, 144, 113, 1, 251, 78, 49, 234, 154, 138, 169, 239, 105, 150, 14, 94, 246, 255, 202, 7, 169, 100, 94, 162, 207, 38, 81, 199, 201, 42, 140, 87}
-
-	Store = sessions.NewCookieStore(
-		authKeyOne,
-		encryptionKeyOne,
-	)
-
-	Store.Options = &sessions.Options{
-		MaxAge:   60 * 15,
-		HttpOnly: true,
+var (
+	users = map[string]string{
+		"justin": "babylon",
 	}
 
-}
+	jwtKey = []byte("my_secret_key")
+)
 
-// Authenticated is a middleware to ensure the client has a valid session.
-func Authenticated(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session, err := Store.Get(r, "BATTLESHIP")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		if auth, ok := session.Values["user"].(bool); !ok || !auth {
-			session.Values["user"] = false
-			session.AddFlash(r.RequestURI)
-			if err := session.Save(r, w); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			http.Redirect(w, r, "/auth/login", http.StatusFound)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
-func hashPw(pwd []byte) [sha256.Size]byte {
-	return sha256.Sum256(pwd)
-}
+const (
+	cookieName = "token"
+)
 
 // Routes returns a router with all the login endpoints
 func (ar AuthResource) Routes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Route("/login", func(r chi.Router) {
-		r.Get("/", ar.LoginGET)
-		r.Post("/", ar.LoginPOST)
+		r.Get("/", loginPage)
+		r.Post("/", signIn)
 	})
 
 	return r
 }
 
-// LoginPOST ...
-func (ar AuthResource) LoginPOST(w http.ResponseWriter, r *http.Request) {
-	session, err := Store.Get(r, "BATTLESHIP")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if err := r.ParseForm(); err != nil {
-		internalError(w)
-	}
-
-	usrPass := r.FormValue("password")
-	usrName := r.FormValue("username")
-
-	if hashPw([]byte(usrPass)) == u.Passwd && u.UName == usrName {
-		flashes := session.Flashes()
-		referer := "/bsState/"
-		if len(flashes) > 0 {
-			ref := flashes[0].(string)
-			referer = ref
-		}
-
-		session.Values["user"] = true
-
-		if err := session.Save(r, w); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+//Refresh will refresh a valid token if it is within 30 seconds of the expiration time.
+func Refresh(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, err := r.Cookie(cookieName)
+		if err != nil {
+			if err == http.ErrNoCookie {
+				log.Printf("err %s\n", err)
+				next.ServeHTTP(w, r)
+				return
+			}
+			log.Printf("err %s\n", err)
+			next.ServeHTTP(w, r)
 			return
 		}
 
-		http.Redirect(w, r, referer, http.StatusFound)
-	} else {
-		errorMsg := ErrorMsg{Message: "Login Failed"}
-		unauthorizedPage(w, errorMsg)
-	}
+		tknStr := c.Value
+		claims := &Claims{}
+		tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (interface{}, error) {
+			return jwtKey, nil
+		})
+		if err != nil {
+			if err == jwt.ErrSignatureInvalid {
+				unauthorized(w)
+				return
+			}
+			log.Printf("err %s\n", err)
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		if !tkn.Valid {
+			log.Printf("token not valid\n")
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		if time.Unix(claims.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
+			log.Printf("token not expiring\n")
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		expireTime := time.Now().Add(5 * time.Minute)
+		claims.ExpiresAt = expireTime.Unix()
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		tokenString, err := token.SignedString(jwtKey)
+		if err != nil {
+			internalError(w)
+			return
+		}
+
+		http.SetCookie(w, &http.Cookie{
+			Name:    cookieName,
+			Value:   tokenString,
+			Expires: expireTime,
+		})
+	})
 }
 
-// LoginGET ...
-func (ar AuthResource) LoginGET(w http.ResponseWriter, r *http.Request) {
+// Authenticated is a middleware to ensure the client has a valid session.
+func Authenticated(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, err := r.Cookie(cookieName)
+		if err != nil {
+			if err == http.ErrNoCookie {
+				log.Printf("error %s\n", err)
+				http.Redirect(w, r, "/auth/login", http.StatusFound)
+				return
+			}
+			badRequest(w, "")
+			return
+		}
+
+		tknStr := c.Value
+
+		claims := &Claims{}
+		tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (interface{}, error) {
+			return jwtKey, nil
+		})
+
+		if err != nil {
+			if err == jwt.ErrSignatureInvalid {
+				log.Printf("error %s\n", err)
+				http.Redirect(w, r, "/auth/login", http.StatusFound)
+				return
+			}
+			badRequest(w, "")
+			return
+		}
+
+		if !tkn.Valid {
+			log.Printf("token not valid\n")
+			http.Redirect(w, r, "/auth/login", http.StatusFound)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func signIn(w http.ResponseWriter, r *http.Request) {
+	var creds Credentials
+	if err := r.ParseForm(); err != nil {
+		badRequest(w, err.Error())
+		return
+	}
+	creds.Username = r.FormValue("username")
+	creds.Password = r.FormValue("password")
+
+	expectedPasswd, ok := users[creds.Username]
+
+	if !ok || expectedPasswd != creds.Password {
+		unauthorized(w)
+		return
+	}
+
+	expireTime := time.Now().Add(5 * time.Minute)
+
+	claims := &Claims{
+		Username: creds.Username,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expireTime.Unix(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	tokenString, err := token.SignedString(jwtKey)
+	if err != nil {
+		internalError(w)
+		return
+	}
+
+	log.Println("Setting cookie")
+	http.SetCookie(w, &http.Cookie{
+		Name:    cookieName,
+		Domain:  "localhost",
+		Path:    "/",
+		Value:   tokenString,
+		Expires: expireTime,
+	})
+
+	referer := r.Referer()
+	if referer == "" {
+		referer = "/"
+	}
+
+	log.Printf("redirecting to %s\n", referer)
+
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func loginPage(w http.ResponseWriter, r *http.Request) {
 	tmpl := template.Must(template.ParseFiles("views/base.html", "views/login.html"))
 	if err := tmpl.ExecuteTemplate(w, "base.html", nil); err != nil {
 		internalError(w)
 		log.Println(err)
 	}
+}
+
+func hashPw(pwd []byte) [sha256.Size]byte {
+	return sha256.Sum256(pwd)
 }
