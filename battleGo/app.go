@@ -24,12 +24,9 @@ const (
 func main() {
 
 	r := chi.NewRouter()
-
-	r.Mount("/events/", routes.EventBroker)
-	r.Mount("/auth", routes.AuthResource{}.Routes())
+	r.With(middleware.Logger).Mount("/events/", routes.EventBroker)
 
 	r.Route("/", func(r chi.Router) {
-
 		r.Use(middleware.RequestID)
 		r.Use(middleware.RealIP)
 		r.Use(middleware.Recoverer)
@@ -41,6 +38,7 @@ func main() {
 		// Unsecured routes
 		r.With(session.BattlePhase).Mount("/session", session.Routes())
 		r.With(session.BattlePhase, session.ActiveSessionCheck).Post("/target", session.PostTarget)
+		r.Mount("/auth", routes.AuthResource{}.Routes())
 
 		// Secured routes
 		r.Route("/", func(r chi.Router) {

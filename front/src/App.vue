@@ -143,7 +143,7 @@ export default {
       let es = new EventSource("/events/updates");
 
       es.addEventListener(
-        "message",
+        "game",
         e => {
             let evt = new fireEvent(JSON.parse(e.data));
             console.log(e.data);
