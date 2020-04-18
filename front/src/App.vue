@@ -49,7 +49,7 @@ import GameGrid from "./components/GameGrid.vue";
 import BsState from "./bsState";
 import fireEvent from "./fireEvent";
 import modal from "./components/modal.vue";
-import axios from "axios"
+import axios from "axios";
 
 export default {
   name: "App",
@@ -73,13 +73,19 @@ export default {
       let url = document.getElementById("oppUrl").value;
       console.log(url);
       console.log(modelName);
-      let endpoint = url === "" ? "/battle/"+modelName : "/battle/"+modelName+"/"+url;
+      let endpoint =
+        url === ""
+          ? "/battle/" + modelName
+          : "/battle/" + modelName + "/" + url;
       let that = this;
-      axios.get(endpoint ).then((resp) => {
-        that.stateUpdate(resp.data);
-      }).catch(reason => {
-        alert("An error occured: " + reason);
-      });
+      axios
+        .get(endpoint)
+        .then(resp => {
+          that.stateUpdate(resp.data);
+        })
+        .catch(reason => {
+          alert("An error occured: " + reason);
+        });
       document.getElementById("stateName").value = "stacky";
       document.getElementById("oppUrl").value = "";
       this.isModalVisible = false;
@@ -140,14 +146,14 @@ export default {
       });
     },
     setupStream() {
-      let es = new EventSource("/events/updates");
+      let es = new EventSource("/events");
 
       es.addEventListener(
         "message",
         e => {
-            let evt = new fireEvent(JSON.parse(e.data));
-            console.log(e.data);
-            evt.updateGrid();
+          let evt = new fireEvent(JSON.parse(e.data));
+          console.log(e.data);
+          evt.updateGrid();
         },
         false
       );
@@ -240,7 +246,7 @@ input {
   width: 200px;
   background: #ffffff;
   margin: 5px;
-  box-shadow: rgba(0,0,0,0.1) 0 0 8px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 0 8px;
 }
 
 input:hover,

@@ -1,5 +1,9 @@
 package battlestate
 
+import (
+	"strings"
+)
+
 const (
 	Miss       = "MISS"
 	Carrier    = "CARRIER"
@@ -115,6 +119,44 @@ func (bs *BsState) GameLost() bool {
 	destroyer, _ := bs.Destroyer.Sunk()
 
 	return carrier && battleship && cruiser && submarine && destroyer
+}
+
+func (bs *BsState) ShipFromString(shipName string) *Ship {
+	if strings.ToLower(shipName) == "carrier" {
+		return bs.Carrier
+	}
+	if strings.ToLower(shipName) == "battleship" {
+		return bs.Battleship
+	}
+	if strings.ToLower(shipName) == "cruiser" {
+		return bs.Cruiser
+	}
+	if strings.ToLower(shipName) == "submarine" {
+		return bs.Submarine
+	}
+	if strings.ToLower(shipName) == "destroyer" {
+		return bs.Destroyer
+	}
+	return nil
+}
+
+// HitEnemy add a target position to the enemy ship hit profile
+func (bs *BsState) HitEnemy(shipName string, target string) {
+	if shipName == Carrier {
+		bs.Carrier.HitProfiles[1] = append(bs.Carrier.HitProfiles[1], target)
+	}
+	if shipName == BattleShip {
+		bs.Battleship.HitProfiles[1] = append(bs.Battleship.HitProfiles[1], target)
+	}
+	if shipName == Cruiser {
+		bs.Cruiser.HitProfiles[1] = append(bs.Cruiser.HitProfiles[1], target)
+	}
+	if shipName == Submarine {
+		bs.Submarine.HitProfiles[1] = append(bs.Submarine.HitProfiles[1], target)
+	}
+	if shipName == Destroyer {
+		bs.Destroyer.HitProfiles[1] = append(bs.Destroyer.HitProfiles[1], target)
+	}
 }
 
 func targetHitShip(target []int, placement [][]int) bool {

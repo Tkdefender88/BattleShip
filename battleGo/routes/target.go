@@ -2,13 +2,22 @@ package routes
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/battlestate"
+)
+
+const (
+	pem  = "/etc/certs/wildcard_cs_mtech_edu.key"
+	cert = "/etc/certs/wildcard_cs_mtech_edu.cer"
 )
 
 type (
@@ -69,6 +78,7 @@ func (rs *SessionResource) PostTarget(w http.ResponseWriter, r *http.Request) {
 	} else {
 		resp.Status = ship
 		resp.Tile = req.Tile
+		log.Printf("%+v\n", rs.bsState.Cruiser.HitProfiles)
 		if rs.bsState.GameLost() {
 			resp.Disposition = "WIN"
 		} else {
@@ -84,6 +94,7 @@ func (rs *SessionResource) PostTarget(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rs.UpdateClient(event)
+
 	go rs.Target()
 
 	ok(w)
@@ -95,7 +106,7 @@ func (rs *SessionResource) PostTarget(w http.ResponseWriter, r *http.Request) {
 func (rs *SessionResource) Target() {
 	time.Sleep(time.Millisecond * time.Duration(rs.Latency))
 
-	index := rs.strategy.FireNext()
+	index := rs.strategy.Step()
 	tile := tileFromIndex(index)
 
 	body := &TargetRequest{
@@ -104,7 +115,31 @@ func (rs *SessionResource) Target() {
 	}
 
 	b, _ := json.Marshal(body)
-	r, err := http.Post("https://"+rs.opponentURL+"/target", "application/json", bytes.NewReader(b))
+	certPool, err := x509.SystemCertPool()
+	if err != nil || certPool == nil {
+		certPool = x509.NewCertPool()
+	}
+
+	pemkey, err := ioutil.ReadFile(pem)
+	if err != nil {
+		log.Printf("Error occured reading cert key: %+v\n", err)
+		return
+	}
+
+	certificate, err := tls.LoadX509KeyPair(cert, pem)
+	certPool.AppendCertsFromPEM(pemkey)
+
+	client := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs:            certPool,
+				Certificates:       []tls.Certificate{certificate},
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+
+	r, err := client.Post("https://"+rs.opponentURL+"/bsProtocol/target", "application/json", bytes.NewReader(b))
 	if err != nil {
 		log.Println("err", err)
 		return
@@ -117,8 +152,18 @@ func (rs *SessionResource) Target() {
 		fmt.Printf("Error: %+v", err)
 	}
 
+	fmt.Printf("Body: %+v\n", resp)
+
 	if resp.Status != battlestate.Miss {
 		rs.strategy.ConfirmShot(resp.Tile, true)
+		rs.bsState.HitEnemy(resp.Status, resp.Tile)
+
+		ship := rs.bsState.ShipFromString(resp.Status)
+		_, sunk := ship.Sunk()
+
+		if sunk {
+			rs.strategy.RemoveShip(strings.ToLower(resp.Status))
+		}
 	} else {
 		rs.strategy.ConfirmShot(resp.Tile, false)
 	}

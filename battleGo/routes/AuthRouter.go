@@ -184,7 +184,7 @@ func signIn(w http.ResponseWriter, r *http.Request) {
 	log.Println("Setting cookie")
 	http.SetCookie(w, &http.Cookie{
 		Name:    cookieName,
-		Domain:  "localhost",
+		Domain:  "csdept16.cs.mtech.edu",
 		Path:    "/",
 		Value:   tokenString,
 		Expires: expireTime,

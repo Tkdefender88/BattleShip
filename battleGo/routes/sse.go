@@ -59,17 +59,12 @@ func (broker *Broker) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	// Signal the EventBroker that we have a new connection
 	broker.newClients <- messageChan
 
-	// Remove this client from the map of connected clients
-	// when this handler exits.
-	defer func() {
-		broker.closingClients <- messageChan
-	}()
-
 	// Listen to connection close and un-register messageChan
-	notify := rw.(http.CloseNotifier).CloseNotify()
+	ctx := req.Context()
 
 	go func() {
-		<-notify
+		<-ctx.Done()
+		fmt.Println("WOOOOOOO")
 		broker.closingClients <- messageChan
 	}()
 
@@ -77,7 +72,9 @@ func (broker *Broker) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	for {
 		// Write to the ResponseWriter
 		// Server Sent Events compatible
-		fmt.Fprintf(rw, "data: %s\n\n", <-messageChan)
+		data := <-messageChan
+		fmt.Println("Sending Data: ", data)
+		fmt.Fprintf(rw, "data: %s\n\n", data)
 
 		// Flush the data immediatly instead of buffering it for later.
 		flusher.Flush()
@@ -103,7 +100,7 @@ func (broker *Broker) listen() {
 		case event := <-broker.Notifier:
 			// We got a new event from the outside!
 			// Send event to all connected clients
-			for clientMessageChan, _ := range broker.clients {
+			for clientMessageChan := range broker.clients {
 				clientMessageChan <- event
 			}
 		}

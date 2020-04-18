@@ -3,6 +3,8 @@ package routes
 import (
 	"bytes"
 	"crypto/md5"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
@@ -49,7 +51,7 @@ type (
 )
 
 const (
-	playerURL = "https://csdept16.mtech.edu:30124"
+	playerURL = "csdept16.cs.mtech.edu:30124"
 )
 
 var (
@@ -183,16 +185,37 @@ func (rs *SessionResource) DeleteSession(w http.ResponseWriter, r *http.Request)
 // StartSession sends a new post request to the opponents /session endpoint to
 // try and establish a new game session between the two servers
 func (rs *SessionResource) StartSession() {
-	client := http.Client{}
-
 	body, _ := json.Marshal(SessionRequest{
 		OpponentURL: playerURL,
 		Latency:     5000,
 	})
 
-	req, err := http.NewRequest(http.MethodPost, "https://"+rs.opponentURL+"/session", bytes.NewReader(body))
+	certPool, err := x509.SystemCertPool()
+	if err != nil || certPool == nil {
+		certPool = x509.NewCertPool()
+	}
+
+	pemkey, err := ioutil.ReadFile(pem)
 	if err != nil {
-		log.Printf("Error %+v\n", err)
+		log.Printf("Error occured reading cert key: %+v\n", err)
+		return
+	}
+	certificate, err := tls.LoadX509KeyPair(cert, pem)
+	certPool.AppendCertsFromPEM(pemkey)
+
+	client := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs:            certPool,
+				Certificates:       []tls.Certificate{certificate},
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+
+	req, err := http.NewRequest(http.MethodPost, "https://"+rs.opponentURL+"/bsProtocol/session", bytes.NewReader(body))
+	if err != nil {
+		log.Printf("Error: %+v\n", err)
 		return
 	}
 
@@ -203,10 +226,14 @@ func (rs *SessionResource) StartSession() {
 	}
 	defer resp.Body.Close()
 
-	err = json.NewDecoder(resp.Body).Decode(rs)
+	err = json.NewDecoder(resp.Body).Decode(&rs)
 	if err != nil {
 		log.Printf("Error %+v\n", err)
 		return
+	}
+
+	if rs.Roll == 0 {
+		go rs.Target()
 	}
 }
 
@@ -234,19 +261,19 @@ func (rs *SessionResource) PostSession(w http.ResponseWriter, r *http.Request) {
 	rand.Seed(time.Now().UTC().UnixNano())
 	rs.Roll = rand.Intn(2)
 
-	if rs.Roll == 0 {
+	if rs.Roll == 1 {
 		log.Println("Our turn first, firing shot")
 		go rs.Target()
 	}
 
-	json.NewEncoder(w).Encode(rs)
+	json.NewEncoder(w).Encode(&rs)
 	rs.activeSesh = true
 }
 
 // Delete requests that the current session be terminated.
 func (rs *SessionResource) Delete() {
 	client := http.Client{}
-	r, err := http.NewRequest(http.MethodDelete, rs.opponentURL+"/session/"+rs.Session, nil)
+	r, err := http.NewRequest(http.MethodDelete, rs.opponentURL+"/bsProtocol/session/"+rs.Session, nil)
 	if err != nil {
 		log.Printf("err %+v\n", err)
 		return

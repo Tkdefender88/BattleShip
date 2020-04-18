@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"log"
 	"net/http"
 	"os"
@@ -17,15 +18,15 @@ import (
 const (
 	addr             = "30124"
 	shutdownDeadline = time.Second * 15
-	//pem  = "/etc/certs/wildcard_cs_mtech_edu.key"
-	//cert = "/etc/certs/wildcard_cs_mtech_edu.cer"
+	pem              = "/etc/certs/wildcard_cs_mtech_edu.key"
+	cert             = "/etc/certs/wildcard_cs_mtech_edu.cer"
 )
 
 func main() {
 
 	r := chi.NewRouter()
 
-	r.Mount("/events/", routes.EventBroker)
+	r.Mount("/events", routes.EventBroker)
 	r.Mount("/auth", routes.AuthResource{}.Routes())
 
 	r.Route("/", func(r chi.Router) {
@@ -39,8 +40,8 @@ func main() {
 
 		session := routes.NewSession()
 		// Unsecured routes
-		r.With(session.BattlePhase).Mount("/session", session.Routes())
-		r.With(session.BattlePhase, session.ActiveSessionCheck).Post("/target", session.PostTarget)
+		r.With(session.BattlePhase).Mount("/bsProtocol/session", session.Routes())
+		r.With(session.BattlePhase, session.ActiveSessionCheck).Post("/bsProtocol/target", session.PostTarget)
 
 		// Secured routes
 		r.Route("/", func(r chi.Router) {
@@ -60,12 +61,15 @@ func main() {
 	srv := &http.Server{
 		Addr:    ":" + addr,
 		Handler: r,
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
 	}
 
 	go func() {
 		log.Printf("Listening on Port:%s", addr)
-		//log.Fatal(srv.ListenAndServeTLS(cert, pem))
-		log.Fatal(srv.ListenAndServe())
+		log.Fatal(srv.ListenAndServeTLS(cert, pem))
+		//log.Fatal(srv.ListenAndServe())
 	}()
 
 	c := make(chan os.Signal, 1)
