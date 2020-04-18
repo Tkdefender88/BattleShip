@@ -8,4 +8,12 @@ following the battleship API and implement a firing strategy that their server w
 
 ---
 
+To run the application after cloning:
 
+```
+cd front/
+yarn build --dest ../battleGo/public
+cd ../battleGo/
+go build -o battleGo
+./battleGo
+```
