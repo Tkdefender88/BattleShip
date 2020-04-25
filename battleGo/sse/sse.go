@@ -1,10 +1,15 @@
-package routes
+package sse
 
 import (
 	"fmt"
 	"log"
 	"net/http"
 )
+
+// Sender ...
+type Sender interface {
+	Send(event []byte)
+}
 
 type Broker struct {
 	// Events are pushed to this channel by the main events-gathering routine
@@ -20,8 +25,8 @@ type Broker struct {
 	clients map[chan []byte]bool
 }
 
-// Broker factory
-func NewServer() (broker *Broker) {
+// NewBroker is Broker factory
+func NewBroker() (broker *Broker) {
 	// Instantiate a EventBroker
 	broker = &Broker{
 		Notifier:       make(chan []byte, 1),
@@ -34,6 +39,11 @@ func NewServer() (broker *Broker) {
 	go broker.listen()
 
 	return
+}
+
+// Send event to all the clients of the broker
+func (broker *Broker) Send(event []byte) {
+	broker.Notifier <- event
 }
 
 func (broker *Broker) ServeHTTP(rw http.ResponseWriter, req *http.Request) {

@@ -1,4 +1,4 @@
-package routes
+package bsprotocol
 
 import (
 	"bytes"
@@ -8,8 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/battlestate"
-
+	"github.com/Tkdefender88/BattleShip/battleGo/battlestate"
 	"github.com/go-chi/chi"
 )
 

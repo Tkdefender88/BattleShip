@@ -1,10 +1,11 @@
-package routes
+package bsprotocol
 
 import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -13,8 +14,12 @@ import (
 	"strconv"
 	"time"
 
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/battlestate"
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/solver"
+	"github.com/go-chi/render"
+
+	"github.com/Tkdefender88/BattleShip/battleGo/battlestate"
+	"github.com/Tkdefender88/BattleShip/battleGo/routes"
+	"github.com/Tkdefender88/BattleShip/battleGo/solver"
+	"github.com/Tkdefender88/BattleShip/battleGo/sse"
 	"github.com/go-chi/chi"
 )
 
@@ -37,6 +42,8 @@ type (
 		bsState *battlestate.BsState
 		// determines how the server responds to certain requests
 		battlePhase bool
+
+		eventBroker sse.Sender
 	}
 
 	//SessionRequest is used for unmarshalling the post request body to the /session endpoint
@@ -46,57 +53,45 @@ type (
 		// Latency is the time to wait between sending requests to the opponents /target endpoint
 		Latency int `json:"latency"`
 	}
+
+	// SessionOver is returned after a DELETE request to /session
+	SessionOver struct {
+		Session  string        `json:"session"`
+		Duration time.Duration `json:"duration"`
+	}
 )
 
 const (
 	playerURL = "https://csdept16.mtech.edu:30124"
 )
 
-var (
-	EventBroker *Broker
-)
-
-func init() {
-	EventBroker = NewServer()
-
-	/*
-		go func() {
-			tiles := []int{34, 56, 42, 55, 33, 97}
-			for i := 0; i < 6; i++ {
-				time.Sleep(3 * time.Second)
-				fe := FireEvent{
-					Player: "player",
-					Tile:   tiles[i],
-					Hit:    tiles[i]%2 == 0,
-				}
-				b, _ := json.Marshal(&fe)
-				EventBroker.Notifier <- b
-			}
-			for i := 0; i < 6; i++ {
-				time.Sleep(3 * time.Second)
-				fe := FireEvent{
-					Player: "opponent",
-					Tile:   tiles[i],
-					Hit:    tiles[i]%2 == 0,
-				}
-				b, _ := json.Marshal(&fe)
-				EventBroker.Notifier <- b
-			}
-		}()
-	*/
-}
-
 // NewSession creates a new SessionResource object.
-func NewSession() *SessionResource {
+func NewSession(sender sse.Sender) *SessionResource {
 	hostName, err := os.Hostname()
 	if err != nil {
 		hostName = "csdept16"
 	}
 	return &SessionResource{
-		Names:      []string{hostName, "Justin"},
-		activeSesh: false,
-		strategy:   solver.NewStrategy(),
+		Names:       []string{hostName, "Justin"},
+		activeSesh:  false,
+		strategy:    solver.NewStrategy(),
+		eventBroker: sender,
 	}
+}
+
+// Render implements the Renderer interface.
+func (s *SessionRequest) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
+}
+
+// Render ...
+func (rs *SessionResource) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
+}
+
+// Render satisfies interface
+func (rs *SessionOver) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
 }
 
 // BattlePhase is middleware to block target and session requests if the server
@@ -104,7 +99,7 @@ func NewSession() *SessionResource {
 func (rs *SessionResource) BattlePhase(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !rs.battlePhase {
-			preconditionFail(w)
+			render.Render(w, r, ErrPreconditionFail(errors.New("Not in battle phase")))
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -119,40 +114,55 @@ func (rs *SessionResource) ActiveSessionCheck(next http.Handler) http.Handler {
 			Session string `json:"session"`
 		}{}
 
-		bodyBytes, err := ioutil.ReadAll(r.Body)
+		reqBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Printf("Error: %+v\n", err)
-			internalError(w)
+			render.Render(w, r, ErrInternalError(err))
 			return
 		}
 		r.Body.Close()
 
-		err = json.Unmarshal(bodyBytes, s)
+		err = json.Unmarshal(reqBody, s)
 		if err != nil {
-			badRequestReader(w, ioutil.NopCloser(bytes.NewBuffer(bodyBytes)))
+			render.Render(w, r, ErrBadRequest(err, reqBody))
 		}
 
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(reqBody))
 
 		if rs.activeSesh && s.Session != rs.Session {
-			body, _ := json.Marshal(struct {
+			body := struct {
 				Opponent []string `json:"opponent"`
 			}{
 				Opponent: rs.Names,
-			})
-			forbidden(w, body)
+			}
+			render.Render(w, r, ErrForbidden(err, body))
 			return
 		}
 		next.ServeHTTP(w, r)
 	})
 }
 
-// Routes sets up all the routes for the /session endpoint
+// Routes sets up all the routes for the /bsProtocol endpoint
 func (rs *SessionResource) Routes() chi.Router {
 	r := chi.NewRouter()
 
-	r.With(rs.ActiveSessionCheck).Delete("/{session-id}", rs.DeleteSession)
-	r.With(rs.BattlePhase, rs.ActiveSessionCheck).Post("/", rs.PostSession)
+	r.Route("/session", func(r chi.Router) {
+		r.With(rs.ActiveSessionCheck).Delete("/{session-id}", rs.DeleteSession)
+		r.With(rs.BattlePhase, rs.ActiveSessionCheck).Post("/", rs.PostSession)
+	})
+
+	r.Route("/target", func(r chi.Router) {
+		r.Use(rs.BattlePhase)
+		r.Use(rs.ActiveSessionCheck)
+		r.Post("/", rs.PostTarget)
+	})
+
+	r.Route("/battle", func(r chi.Router) {
+		r.Use(routes.Refresh)
+		r.Use(routes.Authenticated)
+		r.Get("/{filename}/{url}", rs.URLParam(rs.Get))
+		r.Get("/{filename}", rs.Get)
+	})
 
 	return r
 }
@@ -162,22 +172,20 @@ func (rs *SessionResource) DeleteSession(w http.ResponseWriter, r *http.Request)
 	session := chi.URLParam(r, "session-id")
 
 	if session != rs.Session {
-		badRequest(w, session)
+		render.Render(w, r, ErrBadRequest(errors.New("invalid session"), session))
 		return
 	}
 
 	rs.battlePhase = false
 
-	resp := &struct {
-		Session  string        `json:"session-id"`
-		Duration time.Duration `json:"duration"`
-	}{
+	resp := &SessionOver{
 		Session:  rs.Session,
 		Duration: time.Since(int64ToTime(rs.Epoch)),
 	}
 
-	rs = NewSession()
-	okReader(w, resp)
+	events := rs.eventBroker
+	rs = NewSession(events)
+	render.Render(w, r, resp)
 }
 
 // StartSession sends a new post request to the opponents /session endpoint to
@@ -214,10 +222,14 @@ func (rs *SessionResource) StartSession() {
 // between the requester and the server.
 func (rs *SessionResource) PostSession(w http.ResponseWriter, r *http.Request) {
 	req := &SessionRequest{}
-	err := json.NewDecoder(r.Body).Decode(req)
+	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Println(err)
-		badRequestReader(w, r.Body)
+		render.Render(w, r, ErrInternalError(err))
+		return
+	}
+	err = json.Unmarshal(b, req)
+	if err != nil {
+		render.Render(w, r, ErrBadRequest(err, b))
 		return
 	}
 
@@ -239,8 +251,8 @@ func (rs *SessionResource) PostSession(w http.ResponseWriter, r *http.Request) {
 		go rs.Target()
 	}
 
-	json.NewEncoder(w).Encode(rs)
 	rs.activeSesh = true
+	render.Render(w, r, rs)
 }
 
 // Delete requests that the current session be terminated.

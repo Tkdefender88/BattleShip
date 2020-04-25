@@ -1,5 +1,7 @@
 package battlestate
 
+import "net/http"
+
 const (
 	Miss       = "MISS"
 	Carrier    = "CARRIER"
@@ -43,6 +45,11 @@ func NewShip() *Ship {
 	return &Ship{
 		HitProfiles: hp,
 	}
+}
+
+// Render satisfies interface Renderer
+func (bs *BsState) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
 }
 
 // NewBsState creates a new BsState object with all the ships initialized

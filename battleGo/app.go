@@ -9,7 +9,10 @@ import (
 
 	"context"
 
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/routes"
+	"github.com/Tkdefender88/BattleShip/battleGo/bsprotocol"
+	"github.com/Tkdefender88/BattleShip/battleGo/routes"
+	"github.com/Tkdefender88/BattleShip/battleGo/sse"
+
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 )
@@ -23,39 +26,7 @@ const (
 
 func main() {
 
-	r := chi.NewRouter()
-
-	r.Mount("/events/", routes.EventBroker)
-	r.Mount("/auth", routes.AuthResource{}.Routes())
-
-	r.Route("/", func(r chi.Router) {
-
-		r.Use(middleware.RequestID)
-		r.Use(middleware.RealIP)
-		r.Use(middleware.Recoverer)
-		r.Use(middleware.Logger)
-		// Set a timeout value on the request context, to signal when the request has timed out
-		r.Use(middleware.Timeout(60 * time.Second))
-
-		session := routes.NewSession()
-		// Unsecured routes
-		r.With(session.BattlePhase).Mount("/session", session.Routes())
-		r.With(session.BattlePhase, session.ActiveSessionCheck).Post("/target", session.PostTarget)
-
-		// Secured routes
-		r.Route("/", func(r chi.Router) {
-			r.Use(routes.Refresh)
-			r.Use(routes.Authenticated)
-
-			fileServer(r)
-			r.With(routes.Refresh, routes.Authenticated).Mount("/bsState", routes.BsStateResource{}.Routes())
-
-			r.With(routes.Refresh, routes.Authenticated).Get("/battle/{filename}", session.Get)
-			r.With(routes.Refresh, routes.Authenticated).Get("/battle/{filename}/{url}", session.URLParam(session.Get))
-		})
-	})
-
-	//r.Use(middlewares.SessionResource)
+	r := router()
 
 	srv := &http.Server{
 		Addr:    ":" + addr,
@@ -92,11 +63,35 @@ func fileServer(router chi.Router) {
 	root := "./public"
 
 	fs := http.FileServer(http.Dir(root))
-	router.Get("/*", func(w http.ResponseWriter, r *http.Request) {
+	router.With(routes.Refresh, routes.Authenticated).Get("/*", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := os.Stat(root + r.RequestURI); os.IsNotExist(err) {
 			http.StripPrefix(r.RequestURI, fs).ServeHTTP(w, r)
 		} else {
 			fs.ServeHTTP(w, r)
 		}
 	})
+}
+
+func router() chi.Router {
+	r := chi.NewRouter()
+
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)                    // add IP address headers
+	r.Use(middleware.Recoverer)                 // Recover gracefully and print trace
+	r.Use(middleware.Logger)                    // Logging
+	r.Use(middleware.Timeout(60 * time.Second)) // Set a timeout for requests
+
+	eventBroker := sse.NewBroker()
+
+	fileServer(r)
+
+	r.Route("/", func(r chi.Router) {
+
+		session := bsprotocol.NewSession(eventBroker)
+		r.With(routes.Refresh, routes.Authenticated).Mount("/bsState", routes.BsStateResource{}.Routes())
+		r.Mount("/bsProtocol", session.Routes())
+
+	})
+
+	return r
 }

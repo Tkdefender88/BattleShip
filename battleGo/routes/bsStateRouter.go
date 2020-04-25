@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/battlestate"
+	"github.com/Tkdefender88/BattleShip/battleGo/battlestate"
 	"github.com/go-chi/chi"
 )
 

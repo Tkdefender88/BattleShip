@@ -1,9 +1,13 @@
+gitea.justinbak.com/juicetin/bsStatePersist v0.0.0-20200312035525-6f136bd77245 h1:qq6VI2Jpy0lwRA3fgu3pa3jrb1KsqS7vDJEHssy9ITI=
+gitea.justinbak.com/juicetin/bsStatePersist/battleGo v0.0.0-20200312035525-6f136bd77245 h1:e1U+d0/XpyaFfIhcvm4brKXnxFQc0Xh9YmQfj+znphU=
 github.com/alexandrevicenzi/go-sse v1.5.0 h1:vyDtyDksp2kDuCnJN/2uH10gQR4dTjxIoMV88LVcj4s=
 github.com/alexandrevicenzi/go-sse v1.5.0/go.mod h1:jdrNAhMgVqP7OfcUuM8eJx0sOY17wc+girs5utpFZUU=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible h1:7qlOGliEKZXTDg6OTjfoBKDXWrumCAMpl/TFQ4/5kLM=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/go-chi/chi v4.0.3+incompatible h1:gakN3pDJnzZN5jqFV2TEdF66rTfKeITyR8qu6ekICEY=
 github.com/go-chi/chi v4.0.3+incompatible/go.mod h1:eB3wogJHnLi3x/kFX2A+IbTBlXxmMeXJVKy9tTv1XzQ=
+github.com/go-chi/render v1.0.1 h1:4/5tis2cKaNdnv9zFLfXzcquC9HbeZgCnxGnKrltBS8=
+github.com/go-chi/render v1.0.1/go.mod h1:pq4Rr7HbnsdaeHagklXub+p6Wd16Af5l9koip1OvJns=
 github.com/gorilla/securecookie v1.1.1 h1:miw7JPhV+b/lAHSXz4qd/nN9jRiAFV5FwjeKyCS8BvQ=
 github.com/gorilla/securecookie v1.1.1/go.mod h1:ra0sb63/xPlUeL+yeDciTfxMRAA+MP+HVt/4epWDjd4=
 github.com/gorilla/sessions v1.2.0 h1:S7P+1Hm5V/AT9cjEcUD5uDaQSX0OE577aCXgoaKpYbQ=

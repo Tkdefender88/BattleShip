@@ -1,13 +1,13 @@
-package routes
+package bsprotocol
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/go-chi/chi"
+	"github.com/go-chi/render"
 )
 
 type (
@@ -48,22 +48,20 @@ func (rs *SessionResource) Get(w http.ResponseWriter, r *http.Request) {
 
 	reader, err := os.Open(target)
 	if err != nil {
-		log.Println(err)
-		internalError(w)
+		render.Render(w, r, ErrInternalError(err))
 		return
 	}
 
 	if err := json.NewDecoder(reader).Decode(&rs.bsState); err != nil {
-		log.Println(err)
-		internalError(w)
+		render.Render(w, r, ErrInternalError(err))
 		return
 	}
 
 	if !rs.bsState.Valid() {
-		badRequest(w, "Invalid game state selected")
+		render.Render(w, r, ErrBadRequest(err, "Invalid game state selected"))
 		return
 	}
 
 	rs.battlePhase = true
-	okReader(w, rs.bsState)
+	render.Render(w, r, rs.bsState)
 }

@@ -1,4 +1,4 @@
-package routes
+package bsprotocol
 
 import (
 	"bytes"
@@ -10,10 +10,9 @@ import (
 	"os"
 	"testing"
 
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/battlestate"
+	"github.com/Tkdefender88/BattleShip/battleGo/battlestate"
+	"github.com/Tkdefender88/BattleShip/battleGo/solver"
 	"github.com/go-chi/chi"
-
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/solver"
 )
 
 func TestStartBattleSession_SessionRequest_200(t *testing.T) {

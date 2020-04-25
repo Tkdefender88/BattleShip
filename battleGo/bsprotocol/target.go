@@ -1,14 +1,17 @@
-package routes
+package bsprotocol
 
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"time"
 
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/battlestate"
+	"github.com/Tkdefender88/BattleShip/battleGo/battlestate"
+	"github.com/go-chi/render"
 )
 
 type (
@@ -42,19 +45,29 @@ type (
 	}
 )
 
+// Render satisfies Renderer interface
+func (t *TargetResource) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
+}
+
 // PostTarget checks if the target the opponent just specified is a hit or a miss
 // responds with which ship was hit and if the game has eneded.
 func (rs *SessionResource) PostTarget(w http.ResponseWriter, r *http.Request) {
 	req := &TargetRequest{}
-
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		badRequestReader(w, r.Body)
+	var buf bytes.Buffer
+	tee := io.TeeReader(r.Body, &buf)
+	if err := json.NewDecoder(tee).Decode(req); err != nil {
+		render.Render(w, r, ErrBadRequest(err, buf))
 		return
 	}
 
 	if rs.Session != req.Session {
 		fmt.Println(rs.Session, req.Session)
-		unauthorized(w)
+		render.Render(w, r, &ErrResponse{
+			Err:            errors.New("Session does not match active session ID"),
+			HTTPStatusCode: http.StatusUnauthorized,
+			StatusText:     http.StatusText(http.StatusUnauthorized),
+		})
 		return
 	}
 
@@ -86,8 +99,7 @@ func (rs *SessionResource) PostTarget(w http.ResponseWriter, r *http.Request) {
 	rs.UpdateClient(event)
 	go rs.Target()
 
-	ok(w)
-	json.NewEncoder(w).Encode(resp)
+	render.Render(w, r, resp)
 }
 
 // Target sends a target request out. Uses the strategy object to calculate the
@@ -143,7 +155,7 @@ func (rs *SessionResource) UpdateClient(event FireEvent) {
 		log.Printf("Error occured sending event message: %+v\n", err)
 		return
 	}
-	EventBroker.Notifier <- eventData
+	rs.eventBroker.Send(eventData)
 }
 
 func tileFromIndex(index int) string {
