@@ -7,6 +7,8 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/Tkdefender88/BattleShip/battleGo/battlestate"
+
 	"context"
 
 	"github.com/Tkdefender88/BattleShip/battleGo/bsprotocol"
@@ -88,7 +90,7 @@ func router() chi.Router {
 	r.Route("/", func(r chi.Router) {
 
 		session := bsprotocol.NewSession(eventBroker)
-		r.With(routes.Refresh, routes.Authenticated).Mount("/bsState", routes.BsStateResource{}.Routes())
+		r.Mount("/bsState", battlestate.BsStateResource{}.Routes())
 		r.Mount("/bsProtocol", session.Routes())
 
 	})

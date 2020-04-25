@@ -1,4 +1,4 @@
-package bsprotocol
+package errorresponse
 
 import (
 	"log"
