@@ -87,13 +87,10 @@ func router() chi.Router {
 
 	fileServer(r)
 
-	r.Route("/", func(r chi.Router) {
-
-		session := bsprotocol.NewSession(eventBroker)
-		r.Mount("/bsState", battlestate.BsStateResource{}.Routes())
-		r.Mount("/bsProtocol", session.Routes())
-
-	})
+	session := bsprotocol.NewSession(eventBroker)
+	r.Mount("/bsState", battlestate.BsStateResource{}.Routes())
+	r.Mount("/bsProtocol", session.Routes())
+	r.Mount("/auth", routes.AuthResource{}.Routes())
 
 	return r
 }

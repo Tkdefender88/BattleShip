@@ -1,5 +1,6 @@
 gitea.justinbak.com/juicetin/bsStatePersist v0.0.0-20200312035525-6f136bd77245 h1:qq6VI2Jpy0lwRA3fgu3pa3jrb1KsqS7vDJEHssy9ITI=
 gitea.justinbak.com/juicetin/bsStatePersist/battleGo v0.0.0-20200312035525-6f136bd77245 h1:e1U+d0/XpyaFfIhcvm4brKXnxFQc0Xh9YmQfj+znphU=
+github.com/Tkdefender88/BattleShip v0.0.0-20200418181601-83ca2009fdb1 h1:F1RrRZ4fxgpm2eDy6suBC61JaLy//cSOIRs7FUbVEdk=
 github.com/alexandrevicenzi/go-sse v1.5.0 h1:vyDtyDksp2kDuCnJN/2uH10gQR4dTjxIoMV88LVcj4s=
 github.com/alexandrevicenzi/go-sse v1.5.0/go.mod h1:jdrNAhMgVqP7OfcUuM8eJx0sOY17wc+girs5utpFZUU=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible h1:7qlOGliEKZXTDg6OTjfoBKDXWrumCAMpl/TFQ4/5kLM=

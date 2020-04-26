@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	errResp "github.com/Tkdefender88/BattleShip/battleGo/errorresponse"
+
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 )
@@ -48,17 +50,17 @@ func (rs *SessionResource) Get(w http.ResponseWriter, r *http.Request) {
 
 	reader, err := os.Open(target)
 	if err != nil {
-		render.Render(w, r, ErrInternalError(err))
+		render.Render(w, r, errResp.ErrInternalError(err))
 		return
 	}
 
 	if err := json.NewDecoder(reader).Decode(&rs.bsState); err != nil {
-		render.Render(w, r, ErrInternalError(err))
+		render.Render(w, r, errResp.ErrInternalError(err))
 		return
 	}
 
 	if !rs.bsState.Valid() {
-		render.Render(w, r, ErrBadRequest(err, "Invalid game state selected"))
+		render.Render(w, r, errResp.ErrBadRequest(err, "Invalid game state selected"))
 		return
 	}
 

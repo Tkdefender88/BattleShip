@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Tkdefender88/BattleShip/battleGo/battlestate"
+	errResp "github.com/Tkdefender88/BattleShip/battleGo/errorresponse"
 	"github.com/go-chi/render"
 )
 
@@ -57,13 +58,13 @@ func (rs *SessionResource) PostTarget(w http.ResponseWriter, r *http.Request) {
 	var buf bytes.Buffer
 	tee := io.TeeReader(r.Body, &buf)
 	if err := json.NewDecoder(tee).Decode(req); err != nil {
-		render.Render(w, r, ErrBadRequest(err, buf))
+		render.Render(w, r, errResp.ErrBadRequest(err, buf))
 		return
 	}
 
 	if rs.Session != req.Session {
 		fmt.Println(rs.Session, req.Session)
-		render.Render(w, r, &ErrResponse{
+		render.Render(w, r, &errResp.ErrResponse{
 			Err:            errors.New("Session does not match active session ID"),
 			HTTPStatusCode: http.StatusUnauthorized,
 			StatusText:     http.StatusText(http.StatusUnauthorized),

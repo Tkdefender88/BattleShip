@@ -17,6 +17,7 @@ import (
 	"github.com/go-chi/render"
 
 	"github.com/Tkdefender88/BattleShip/battleGo/battlestate"
+	errResp "github.com/Tkdefender88/BattleShip/battleGo/errorresponse"
 	"github.com/Tkdefender88/BattleShip/battleGo/routes"
 	"github.com/Tkdefender88/BattleShip/battleGo/solver"
 	"github.com/Tkdefender88/BattleShip/battleGo/sse"
@@ -99,7 +100,7 @@ func (rs *SessionOver) Render(w http.ResponseWriter, r *http.Request) error {
 func (rs *SessionResource) BattlePhase(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !rs.battlePhase {
-			render.Render(w, r, ErrPreconditionFail(errors.New("Not in battle phase")))
+			render.Render(w, r, errResp.ErrPreconditionFail(errors.New("Not in battle phase")))
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -117,14 +118,14 @@ func (rs *SessionResource) ActiveSessionCheck(next http.Handler) http.Handler {
 		reqBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Printf("Error: %+v\n", err)
-			render.Render(w, r, ErrInternalError(err))
+			render.Render(w, r, errResp.ErrInternalError(err))
 			return
 		}
 		r.Body.Close()
 
 		err = json.Unmarshal(reqBody, s)
 		if err != nil {
-			render.Render(w, r, ErrBadRequest(err, reqBody))
+			render.Render(w, r, errResp.ErrBadRequest(err, reqBody))
 		}
 
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(reqBody))
@@ -135,7 +136,7 @@ func (rs *SessionResource) ActiveSessionCheck(next http.Handler) http.Handler {
 			}{
 				Opponent: rs.Names,
 			}
-			render.Render(w, r, ErrForbidden(err, body))
+			render.Render(w, r, errResp.ErrForbidden(err, body))
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -172,7 +173,7 @@ func (rs *SessionResource) DeleteSession(w http.ResponseWriter, r *http.Request)
 	session := chi.URLParam(r, "session-id")
 
 	if session != rs.Session {
-		render.Render(w, r, ErrBadRequest(errors.New("invalid session"), session))
+		render.Render(w, r, errResp.ErrBadRequest(errors.New("invalid session"), session))
 		return
 	}
 
@@ -224,12 +225,12 @@ func (rs *SessionResource) PostSession(w http.ResponseWriter, r *http.Request) {
 	req := &SessionRequest{}
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		render.Render(w, r, ErrInternalError(err))
+		render.Render(w, r, errResp.ErrInternalError(err))
 		return
 	}
 	err = json.Unmarshal(b, req)
 	if err != nil {
-		render.Render(w, r, ErrBadRequest(err, b))
+		render.Render(w, r, errResp.ErrBadRequest(err, b))
 		return
 	}
 

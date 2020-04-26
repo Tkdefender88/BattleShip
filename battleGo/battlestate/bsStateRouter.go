@@ -72,7 +72,6 @@ func (rs BsStateResource) SaveState(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusCreated)
-	render.Render(w, r, nil)
 }
 
 // ListStates will respond with a list of the battlestates currently stored on the
@@ -117,7 +116,7 @@ func (rs BsStateResource) GetState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var resp *BsState
+	resp := &BsState{}
 	err = json.NewDecoder(file).Decode(resp)
 	if err != nil {
 		render.Render(w, r, errResp.ErrInternalError(err))
