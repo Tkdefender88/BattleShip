@@ -1,6 +1,6 @@
 import 'package:angular/angular.dart';
 
-import 'src/header/bs_header_component.dart';
+import 'src/bs_header/bs_header_component.dart';
 
 // AngularDart info: https://angulardart.dev
 // Components info: https://angulardart.dev/components
