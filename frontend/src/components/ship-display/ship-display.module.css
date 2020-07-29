@@ -1,0 +1,11 @@
+.ship_display {
+    background-color: var(--carolina-blue);
+    border-radius: 5%;
+    width: 80%;
+    display: flex;
+    flex-direction: column;
+    min-height: 12vh;
+    align-items: center;
+    justify-content: space-around;
+    box-shadow: 1px 1px 5px black;
+}

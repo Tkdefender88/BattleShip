@@ -1,7 +1,15 @@
+:root {
+    --denim: #1C60C3;
+    --tufts-blue: #398DDB;
+    --carolina-blue: #409DD8;
+    --ghost-white: #F4F4F9;
+}
+
 .App {
     display: grid;
     grid-template-columns: 20vw 80vw;
     grid-template-rows: 10vh 90vh;
+    background-color: var(--ghost-white);
 }
 
 .header {

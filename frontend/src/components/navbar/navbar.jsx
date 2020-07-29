@@ -8,7 +8,7 @@ const NavBar = () => {
         <div className="header">
             <div className="title">BattleShip</div>
             <Dropdown>
-                <Dropdown.Toggle variant="primary">
+                <Dropdown.Toggle variant="info">
                     Game
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
@@ -18,7 +18,7 @@ const NavBar = () => {
             </Dropdown>
 
             <Dropdown>
-                <Dropdown.Toggle variant="secondary">
+                <Dropdown.Toggle variant="info">
                     Help
                 </Dropdown.Toggle>
                 <Dropdown.Menu>

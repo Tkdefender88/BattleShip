@@ -1,5 +1,7 @@
 .shippanel {
     display: flex;
     flex-direction: column;
-    background-color: lightgreen;
+    background-color: var(--tufts-blue);
+    align-items: center;
+    padding-top: 10px;
 }
