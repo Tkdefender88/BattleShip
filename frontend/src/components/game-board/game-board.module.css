@@ -1,0 +1,8 @@
+.game_board {
+    display: grid;
+    grid-template-columns: repeat(10, 45px);
+    grid-template-rows: repeat(10, 45px);
+    border: 1px solid black;
+    width: 450px;
+    height: 450px;
+}

@@ -12,6 +12,12 @@
     background-color: var(--ghost-white);
 }
 
+.grid-container {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
 .header {
     grid-row-start: 1;
     grid-column-start: 1;
