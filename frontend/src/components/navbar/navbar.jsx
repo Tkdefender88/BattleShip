@@ -1,34 +1,30 @@
-import React from 'react';
-import Dropdown from 'react-bootstrap/Dropdown';
-import './navbar.css';
+import React, { useState } from 'react';
+
+const NavBar = (props) => {
 
 
-const NavBar = () => {
     return (
-        <div className="header">
-            <div className="title">BattleShip</div>
-            <Dropdown>
-                <Dropdown.Toggle variant="info">
-                    Game
-                </Dropdown.Toggle>
-                <Dropdown.Menu>
-                    <Dropdown.Item>Load</Dropdown.Item>
-                    <Dropdown.Item>Save</Dropdown.Item>
-                </Dropdown.Menu>
-            </Dropdown>
-
-            <Dropdown>
-                <Dropdown.Toggle variant="info">
-                    Help
-                </Dropdown.Toggle>
-                <Dropdown.Menu>
-                    <Dropdown.Item>About</Dropdown.Item>
-                    <Dropdown.Item>Rules</Dropdown.Item>
-                </Dropdown.Menu>
-            </Dropdown>
-
-        </div>
+        <nav className="navbar">
+            <ul className="navbar-nav">{props.children}</ul>
+        </nav>
     )
 }
 
-export default NavBar;
+const NavItem = (props) => {
+
+    const [open, setOpen] = useState(false);
+    return (
+        <li className="nav-item">
+            <a href="#" className="icon-button" onClick={() => setOpen(!open)}>
+                {props.icon}
+            </a>
+
+            {open && props.children}
+        </li>
+    );
+}
+
+export {
+    NavBar,
+    NavItem
+};

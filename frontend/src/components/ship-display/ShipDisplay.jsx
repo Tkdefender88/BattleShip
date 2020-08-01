@@ -9,7 +9,7 @@ class ShipDisplay extends Component {
         return (
             <div className={style.ship_display}>
                 <div>
-                    <img src={ship}></img>
+                    <img src={ship} alt="ship"></img>
                 </div>
                 <ToggleButtonGroup type="radio" name="options" defaultValue={1}>
                     <ToggleButton value={1}>Horizontal</ToggleButton>
