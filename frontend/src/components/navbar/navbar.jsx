@@ -1,6 +1,5 @@
 import React from 'react';
 import Dropdown from 'react-bootstrap/Dropdown';
-import './navbar.css';
 
 
 const NavBar = () => {

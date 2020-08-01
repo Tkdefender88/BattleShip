@@ -1,9 +1,5 @@
-:root {
-    --denim: #1C60C3;
-    --tufts-blue: #398DDB;
-    --carolina-blue: #409DD8;
-    --ghost-white: #F4F4F9;
-}
+@import "variables";
+@import "globals";
 
 .App {
     display: grid;

@@ -5,7 +5,7 @@ import GameGrid from './components/game-board/game-board';
 
 
 import 'bootstrap/dist/css/bootstrap.min.css';
-import './App.css';
+import './styles/App.scss';
 
 function App() {
   return (

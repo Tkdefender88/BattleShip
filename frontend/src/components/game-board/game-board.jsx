@@ -1,7 +1,6 @@
 import React from 'react';
 import { Component } from 'react';
 import GridTile from '../grid-tile/grid-tile';
-import style from './game-board.module.css';
 
 class GameBoard extends Component {
     render() {
@@ -13,7 +12,7 @@ class GameBoard extends Component {
         }
 
         return (
-            <div className={style.game_board}>
+            <div className="game-board">
                 {items}
             </div>
         );

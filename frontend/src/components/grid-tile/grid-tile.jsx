@@ -1,11 +1,10 @@
 import React from 'react';
 import { Component } from 'react';
-import style from './grid-tile.module.css';
 
 class GridTile extends Component {
     render() {
         return (
-            <div className={style.grid_tile}>
+            <div className="grid-tile">
                 <span class="bg-layer hide-background"></span>
                 <span class="ship-layer"></span>
                 <canvas class="fx-layer" width="45px" height="45px"></canvas>
