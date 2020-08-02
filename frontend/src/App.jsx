@@ -1,21 +1,30 @@
 import React from 'react';
-import NavBar from './components/navbar/navbar';
-import ShipPanel from './components/ship-panel/ShipPanel';
-import GameGrid from './components/game-board/game-board';
+import { NavBar, NavItem } from './components/navbar/navbar';
+import DropdownMenu from './components/dropdown/Dropdown.jsx';
+import ShipPanel from './components/ship-panel/ShipPanel.jsx';
+import GameBoard from './components/game-board/game-board.jsx';
 
+import {ReactComponent as CaretIcon} from './icons/caret.svg';
 
-import 'bootstrap/dist/css/bootstrap.min.css';
 import './styles/App.scss';
 
 function App() {
   return (
-    <div className="App">
-      <NavBar className="header"/>
-      <ShipPanel className="ship-panel"/>
-      <div className="grid-container">
-        <GameGrid />
-        <GameGrid />
+    <div className="battle-ship">
+      <NavBar>
+        <div className="title">
+          BattleShip
+        </div>
+        <NavItem icon={<CaretIcon />}>
+          <DropdownMenu/>
+        </NavItem>
+      </NavBar>
+      <ShipPanel/>
+      <div>
+        <GameBoard/>
+        <GameBoard/>
       </div>
+
     </div>
   );
 }
