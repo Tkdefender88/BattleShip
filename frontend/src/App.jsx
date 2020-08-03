@@ -20,7 +20,7 @@ function App() {
         </NavItem>
       </NavBar>
       <ShipPanel/>
-      <div>
+      <div className="grid-container">
         <GameBoard/>
         <GameBoard/>
       </div>

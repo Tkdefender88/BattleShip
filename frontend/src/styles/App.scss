@@ -1,3 +1,26 @@
 @import "variables";
 @import "globals";
+@import "navBar";
+@import "shipDisplay";
+@import "dropdown";
+@import "shipPanel";
+@import "gridTile";
+@import "gameBoard";
+@import "toggle";
+
+.battle-ship {
+  height: 100vh;
+  display: grid;
+  grid-template-columns: 300px  1fr;
+  grid-template-rows: var(--nav-size) auto;
+}
+
+.grid-container {
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+
 
