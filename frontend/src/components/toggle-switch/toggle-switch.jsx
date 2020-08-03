@@ -17,13 +17,11 @@ class ToggleSwitch extends Component {
     }
 
     render() {
-        const [checked, setChecked] = useState(false); 
-
         return (
             <label class="switch">
                 <input type="checkbox" className="toggle" name="toggleSwitch">
                 </input>
-                <span className="slider">gray</span>
+                <span className="slider"></span>
             </label>
         )
     }
