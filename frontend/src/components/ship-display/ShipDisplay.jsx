@@ -20,10 +20,15 @@ class ShipDisplay extends Component {
         return shipImages[shipName];
     }
 
+    onDragStart(e, ship) {
+        console.log("dragstart: " + ship)
+        e.dataTransfer.setData("ship", ship)
+    }
+
     render() {
         return (
             <div className="ship-display" key={this.props.key}>
-                <div draggable onDragStart={(e) => {}}>
+                <div key={this.props.ship} draggable onDragStart={(e) => {this.onDragStart(e, this.props.ship)}}>
                     <img src={this.shipImage(this.props.ship)} alt="ship"></img>
                 </div>
                 <Toggle/>

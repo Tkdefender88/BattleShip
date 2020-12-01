@@ -4,8 +4,8 @@ import GridTile from '../grid-tile/grid-tile';
 
 class GameBoard extends Component {
 
-    onDrag(e) {
-        e.preventDefault();
+    onDrop(e) {
+        let ship = e.dataTransfer.getData("ship")
     }
 
     render() {
@@ -17,7 +17,11 @@ class GameBoard extends Component {
         }
 
         return (
-            <div className="game-board dropable" onDragOver={(e) => this.onDrag(e)}>
+            <div 
+                className="game-board dropable"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {this.onDrop(e)}} 
+                >
                 {items}
             </div>
         );
