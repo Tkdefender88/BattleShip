@@ -1,6 +1,7 @@
-package main
+package server
 
 import (
+	"context"
 	"crypto/tls"
 	"log"
 	"net/http"
@@ -8,23 +9,21 @@ import (
 	"os/signal"
 	"time"
 
-	"context"
-
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/routes"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+
+	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/routes"
 )
 
 const (
-	addr             = "30124"
+    addr             = ":30124"
 	shutdownDeadline = time.Second * 15
 	pem              = "/etc/certs/wildcard_cs_mtech_edu.key"
 	cert             = "/etc/certs/wildcard_cs_mtech_edu.cer"
 )
 
-func main() {
-
-	r := chi.NewRouter()
+func CreateRouter() *chi.Mux {
+    r := chi.NewRouter()
 
 	r.Mount("/events", routes.EventBroker)
 	r.Mount("/auth", routes.AuthResource{}.Routes())
@@ -55,11 +54,24 @@ func main() {
 			r.With(routes.Refresh, routes.Authenticated).Get("/battle/{filename}/{url}", session.URLParam(session.Get))
 		})
 	})
+    return r
+}
 
-	//r.Use(middlewares.SessionResource)
+type ServeFunc func(s *http.Server) error
+
+func StartServer(s *http.Server) error {
+    return s.ListenAndServeTLS(cert, pem)
+}
+
+func StartDevServer(s *http.Server) error {
+    return s.ListenAndServe()
+}
+
+func Start(serve ServeFunc, addr string) {
+    r := CreateRouter()
 
 	srv := &http.Server{
-		Addr:    ":" + addr,
+		Addr: ":" + addr,
 		Handler: r,
 		TLSConfig: &tls.Config{
 			InsecureSkipVerify: true,
@@ -67,9 +79,8 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("Listening on Port:%s", addr)
-		log.Fatal(srv.ListenAndServeTLS(cert, pem))
-		//log.Fatal(srv.ListenAndServe())
+		log.Printf("Listening on Port :%s", addr)
+		log.Fatal(serve(srv))
 	}()
 
 	c := make(chan os.Signal, 1)
@@ -104,3 +115,4 @@ func fileServer(router chi.Router) {
 		}
 	})
 }
+
