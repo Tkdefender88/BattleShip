@@ -4,30 +4,37 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 )
+
+type Event struct {
+	ID    []byte
+	Event []byte
+	Data  []byte
+}
 
 type Broker struct {
 	// Events are pushed to this channel by the main events-gathering routine
-	Notifier chan []byte
+	Notifier chan Event
 
 	// New client connections
-	newClients chan chan []byte
+	newClients chan chan Event
 
 	// Closed client connections
-	closingClients chan chan []byte
+	closingClients chan chan Event
 
 	// Client connections registry
-	clients map[chan []byte]bool
+	clients map[chan Event]bool
 }
 
 // Broker factory
 func NewServer() (broker *Broker) {
 	// Instantiate a EventBroker
 	broker = &Broker{
-		Notifier:       make(chan []byte, 1),
-		newClients:     make(chan chan []byte),
-		closingClients: make(chan chan []byte),
-		clients:        make(map[chan []byte]bool),
+		Notifier:       make(chan Event, 1),
+		newClients:     make(chan chan Event),
+		closingClients: make(chan chan Event),
+		clients:        make(map[chan Event]bool),
 	}
 
 	// Set it running - listening and broadcasting events
@@ -54,7 +61,7 @@ func (broker *Broker) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	rw.Header().Set("Access-Control-Allow-Origin", "*")
 
 	// Each connection registers its own message channel with the Broker's connections registry
-	messageChan := make(chan []byte)
+	messageChan := make(chan Event)
 
 	// Signal the EventBroker that we have a new connection
 	broker.newClients <- messageChan
@@ -66,18 +73,39 @@ func (broker *Broker) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}()
 
 	// Listen to connection close and un-register messageChan
-	notify := rw.(http.CloseNotifier).CloseNotify()
+	ctx := req.Context()
 
 	go func() {
-		<-notify
+		<-ctx.Done()
 		broker.closingClients <- messageChan
 	}()
 
 	// block waiting for messages broadcast on this connection's messageChan
 	for {
+		var sb strings.Builder
+		msg := <-messageChan
+		if len(msg.Event) > 0 {
+			sb.WriteString("event: ")
+			sb.Write(msg.Event)
+			sb.WriteRune('\n')
+		}
+		if len(msg.Data) > 0 {
+			sb.WriteString("data: ")
+			sb.Write(msg.Data)
+			sb.WriteRune('\n')
+		}
+		if len(msg.ID) > 0 {
+			sb.WriteString("id: ")
+			sb.Write(msg.ID)
+			sb.WriteRune('\n')
+		}
+		sb.WriteRune('\n')
+
+		fmt.Printf("%s", sb.String())
+
 		// Write to the ResponseWriter
 		// Server Sent Events compatible
-		fmt.Fprintf(rw, "data: %s\n\n", <-messageChan)
+		_, _ = fmt.Fprintf(rw, "%s", sb.String())
 
 		// Flush the data immediatly instead of buffering it for later.
 		flusher.Flush()

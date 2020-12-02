@@ -27,7 +27,7 @@ type (
 	}
 
 	// TargetRequest represents the body of a request sent to the /target endpoint
-	// used during the battle phase when players are firing at eachothers ships.
+	// used during the battle phase when players are firing at each others ships.
 	TargetRequest struct {
 		Session string `json:"session"`
 		Tile    string `json:"tile"`
@@ -43,7 +43,7 @@ type (
 )
 
 // PostTarget checks if the target the opponent just specified is a hit or a miss
-// responds with which ship was hit and if the game has eneded.
+// responds with which ship was hit and if the game has ended.
 func (rs *SessionResource) PostTarget(w http.ResponseWriter, r *http.Request) {
 	req := &TargetRequest{}
 
@@ -91,7 +91,7 @@ func (rs *SessionResource) PostTarget(w http.ResponseWriter, r *http.Request) {
 }
 
 // Target sends a target request out. Uses the strategy object to calculate the
-// next shot and then confirmes if the shot was a hit or a miss from the response
+// next shot and then confirms if the shot was a hit or a miss from the response
 func (rs *SessionResource) Target() {
 	time.Sleep(time.Millisecond * time.Duration(rs.Latency))
 
@@ -143,7 +143,11 @@ func (rs *SessionResource) UpdateClient(event FireEvent) {
 		log.Printf("Error occured sending event message: %+v\n", err)
 		return
 	}
-	EventBroker.Notifier <- eventData
+	EventBroker.Notifier <- Event{
+		ID:    nil,
+		Event: []byte("game"),
+		Data:  eventData,
+	}
 }
 
 func tileFromIndex(index int) string {
