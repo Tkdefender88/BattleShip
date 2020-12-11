@@ -4,28 +4,28 @@ import GridTile from '../grid-tile/grid-tile';
 
 class GameBoard extends Component {
 
-    onDrop(e) {
-        let ship = e.dataTransfer.getData("ship")
-    }
+	onDrop(e) {
+		let ship = e.dataTransfer.getData("ship")
+	}
 
-    render() {
+	render() {
 
-        var items = [];
+		var items = [];
 
-        for (let i = 0; i < 100; i ++ ) {
-            items.push(<GridTile key={i}/>);
-        }
+		for (let i = 0; i < 100; i ++ ) {
+			items.push(<GridTile key={i}/>);
+		}
 
-        return (
-            <div 
-                className="game-board dropable"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {this.onDrop(e)}} 
-                >
-                {items}
-            </div>
-        );
-    }
+		return (
+			<div
+				className="game-board dropable"
+				onDragOver={(e) => e.preventDefault()}
+				onDrop={(e) => {this.onDrop(e)}}
+			>
+				{items}
+			</div>
+		);
+	}
 }
 
 export default GameBoard;
