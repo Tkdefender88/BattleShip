@@ -16,8 +16,10 @@ import (
 	"time"
 
 	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/battlestate"
+	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/repository"
 	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/solver"
 	"github.com/go-chi/chi"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type (
@@ -28,6 +30,9 @@ type (
 		Names   []string `json:"names"`   // The system name and player name of the opponent
 		Epoch   int64    `json:"epoc"`    // The time the game started
 		Latency int      `json:"latency"` // The delay between shots
+
+		//repository to access battle models
+		repo repository.ModelRepository
 
 		// value to keep track if a session is active
 		activeSesh bool
@@ -89,7 +94,7 @@ func init() {
 }
 
 // NewSession creates a new SessionResource object.
-func NewSession() *SessionResource {
+func NewSession(repo repository.ModelRepository) *SessionResource {
 	hostName, err := os.Hostname()
 	if err != nil {
 		hostName = "csdept16"
@@ -98,6 +103,7 @@ func NewSession() *SessionResource {
 		Names:      []string{hostName, "Justin"},
 		activeSesh: false,
 		strategy:   solver.NewStrategy(),
+		repo:       repo,
 	}
 }
 
@@ -106,7 +112,7 @@ func NewSession() *SessionResource {
 func (rs *SessionResource) BattlePhase(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !rs.battlePhase {
-			preconditionFail(w)
+			respondError(w, http.StatusPreconditionFailed, "")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -124,14 +130,14 @@ func (rs *SessionResource) ActiveSessionCheck(next http.Handler) http.Handler {
 		bodyBytes, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Printf("Error: %+v\n", err)
-			internalError(w)
+			respondError(w, http.StatusInternalServerError, "")
 			return
 		}
 		r.Body.Close()
 
 		err = json.Unmarshal(bodyBytes, s)
 		if err != nil {
-			badRequestReader(w, ioutil.NopCloser(bytes.NewBuffer(bodyBytes)))
+			respondError(w, http.StatusBadRequest, string(bodyBytes))
 		}
 
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
@@ -142,7 +148,7 @@ func (rs *SessionResource) ActiveSessionCheck(next http.Handler) http.Handler {
 			}{
 				Opponent: rs.Names,
 			})
-			forbidden(w, body)
+			respondError(w, http.StatusForbidden, string(body))
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -159,12 +165,58 @@ func (rs *SessionResource) Routes() chi.Router {
 	return r
 }
 
+// URLParam is a handler wrapper that parses out the optional url parameter
+func (rs *SessionResource) BattleURL(h http.HandlerFunc) http.HandlerFunc {
+	return func(response http.ResponseWriter, r *http.Request) {
+
+		url := chi.URLParam(r, "url")
+		if url != "" {
+			rs.opponentURL = url
+			go rs.StartSession()
+		}
+
+		h.ServeHTTP(response, r)
+	}
+}
+
+// Get handles the /battle route where the optional parameter for the URL
+// is not included
+func (rs *SessionResource) Get(w http.ResponseWriter, r *http.Request) {
+	modelName := chi.URLParam(r, "filename")
+
+	m, err := rs.repo.FindModel(modelName)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			resp := struct {
+				Filename string `json:"filename"`
+			}{
+				Filename: modelName,
+			}
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	rs.bsState = m
+
+	if !rs.bsState.Valid() {
+		respondError(w, http.StatusBadRequest, "Invalid game state selected")
+		return
+	}
+
+	rs.battlePhase = true
+	respondJSON(w, http.StatusOK, rs.bsState)
+}
+
 // DeleteSession tears down a session after a game is completed.
 func (rs *SessionResource) DeleteSession(w http.ResponseWriter, r *http.Request) {
 	session := chi.URLParam(r, "session-id")
 
 	if session != rs.Session {
-		badRequest(w, session)
+		respondError(w, http.StatusBadRequest, session)
 		return
 	}
 
@@ -178,8 +230,8 @@ func (rs *SessionResource) DeleteSession(w http.ResponseWriter, r *http.Request)
 		Duration: time.Since(int64ToTime(rs.Epoch)),
 	}
 
-	rs = NewSession()
-	okReader(w, resp)
+	rs = NewSession(rs.repo)
+	respondJSON(w, http.StatusOK, resp)
 }
 
 // StartSession sends a new post request to the opponents /session endpoint to
@@ -244,7 +296,7 @@ func (rs *SessionResource) PostSession(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(req)
 	if err != nil {
 		log.Println(err)
-		badRequestReader(w, r.Body)
+		respondError(w, http.StatusBadRequest, "")
 		return
 	}
 

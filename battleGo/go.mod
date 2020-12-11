@@ -8,5 +8,7 @@ require (
 	github.com/go-chi/chi v4.0.3+incompatible
 	github.com/gorilla/sessions v1.2.0
 	github.com/spf13/cobra v1.1.1
-	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e // indirect
+	go.mongodb.org/mongo-driver v1.4.4
+	golang.org/x/net v0.0.0-20201021035429-f5854403a974
+	golang.org/x/tools/gopls v0.5.5 // indirect
 )

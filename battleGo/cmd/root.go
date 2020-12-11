@@ -13,9 +13,13 @@ var (
 	RootCmd = &cobra.Command{
 		Use: "battleShip",
 		Short: "battleShip runs a simple battle ship server for webscience class",
-		Run: func(cmd *cobra.Command, args []string){
+		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Println("Root Command ran")
-			server.Start(server.StartServer, Address)
+			err := server.Start(server.StartServer, Address)
+			if err != nil {
+				return err
+			}
+			return nil
 		},
 	}
 )
@@ -28,10 +32,6 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
 	RootCmd.PersistentFlags().StringVarP(&Address, "port", "p", "30124" ,"Port to open dev server on")
 }
 
-func initConfig() {
-    
-}

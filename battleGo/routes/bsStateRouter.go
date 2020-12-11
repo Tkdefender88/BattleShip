@@ -3,28 +3,33 @@ package routes
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 
 	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/battlestate"
+	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/repository"
 	"github.com/go-chi/chi"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // BsStateResource is responsible for all the routes to /bsState
-type BsStateResource struct{}
+type BsStateResource struct {
+	repo repository.ModelRepository
+}
 
-const (
-	modelsDir = "./models/"
-)
+type Controller interface {
+	Routes() chi.Router
+}
+
+func NewBsStateController(repo repository.ModelRepository) *BsStateResource {
+	return &BsStateResource{
+		repo: repo,
+	}
+}
 
 // Routes manages all the routes related to the bsState
 func (rs BsStateResource) Routes() chi.Router {
 	r := chi.NewRouter()
-
-	//r.Use(Authenticated)
 
 	r.Get("/", rs.List)
 
@@ -41,54 +46,42 @@ func (rs BsStateResource) Routes() chi.Router {
 // as the body and will save it to the file system
 func (rs BsStateResource) Post(w http.ResponseWriter, r *http.Request) {
 	filename := chi.URLParam(r, "filename")
+	log.Println(filename)
+	if len(filename) == 0 {
+		respondError(w, http.StatusBadRequest, "No model name given")
+		return
+	}
 	bs := &battlestate.BsState{}
 
-	bytes, err := ioutil.ReadAll(r.Body)
+	err := json.NewDecoder(r.Body).Decode(bs)
 	if err != nil {
 		log.Println(err)
-		internalError(w)
+		respondError(w, http.StatusInternalServerError, "")
 		return
 	}
 	defer r.Body.Close()
 
-	// Unmarshal body to ensure it fits the structure of a bs state
-	if err := json.Unmarshal(bytes, bs); err != nil {
-		log.Println(err)
-		badRequest(w, string(bytes))
+	if !bs.Valid() {
+		respondError(w, http.StatusBadRequest, "Invalid model")
 		return
 	}
 
-	b, err := json.Marshal(bs)
+	id, err := rs.repo.CreateModel(filename, bs)
 	if err != nil {
 		log.Println(err)
-		internalError(w)
+		respondError(w, http.StatusInternalServerError, "")
 		return
 	}
-
-	if err := ioutil.WriteFile(filepath.Join(modelsDir, filename), b, 0666); err != nil {
-		log.Println(err)
-		internalError(w)
-		return
-	}
-
-	created(w)
+	respondJSON(w, http.StatusCreated, map[string]string{"id": id.String()})
 }
 
 // List will respond with a list of the battlestates currently stored on the
 // filesystem
 func (rs BsStateResource) List(w http.ResponseWriter, r *http.Request) {
-	files, err := ioutil.ReadDir(filepath.Dir(modelsDir))
-	if err != nil {
-		log.Println(err)
-		internalError(w)
-		return
-	}
 
-	fileList := []string{}
-	for _, f := range files {
-		if f.Name() != "." && f.Name() != ".." {
-			fileList = append(fileList, f.Name())
-		}
+	fileList, err := rs.repo.ListModels()
+	if err != nil {
+		return
 	}
 
 	res := struct {
@@ -97,50 +90,31 @@ func (rs BsStateResource) List(w http.ResponseWriter, r *http.Request) {
 		fileList,
 	}
 
-	ok(w)
-	json.NewEncoder(w).Encode(res)
+	respondJSON(w, http.StatusOK, res)
 }
 
 // Get will respond with the requested battlestate
 func (rs BsStateResource) Get(w http.ResponseWriter, r *http.Request) {
-	val := chi.URLParam(r, "filename")
+	filename := chi.URLParam(r, "filename")
 
-	target := filepath.Join(modelsDir, val)
-
-	if s, err := os.Stat(target); os.IsNotExist(err) {
-		fmt.Println(target)
-		fmt.Println(s)
-		notFound(w)
-
-		return
-	}
-
-	file, err := ioutil.ReadFile(target)
+	// get the resource from the repository
+	bsState, err := rs.repo.FindModel(filename)
 	if err != nil {
-		log.Println(err)
-		internalError(w)
+		if err == mongo.ErrNoDocuments {
+			fmt.Println(filename)
+			respondError(w, http.StatusNotFound, "Document "+filename+" Not Found")
+			return
+		}
+		respondError(w, http.StatusInternalServerError, "")
 		return
 	}
 
-	ok(w)
-	w.Write(file)
+	// return the resouce to the requester
+	respondJSON(w, http.StatusOK, bsState)
 }
 
 // Delete will remove a battlestate from the filesystem
 func (rs BsStateResource) Delete(w http.ResponseWriter, r *http.Request) {
-	filename := chi.URLParam(r, "filename")
-
-	if _, err := os.Stat(filepath.Join(modelsDir, filename)); os.IsNotExist(err) {
-		log.Println(err)
-		notFound(w)
-		return
-	}
-
-	if err := os.Remove(filepath.Join(modelsDir, filename)); err != nil {
-		log.Println(err)
-		internalError(w)
-		return
-	}
-
-	noContent(w)
+	_ = chi.URLParam(r, "filename")
+	w.WriteHeader(http.StatusNoContent)
 }

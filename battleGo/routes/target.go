@@ -57,13 +57,13 @@ func (rs *SessionResource) PostTarget(w http.ResponseWriter, r *http.Request) {
 	req := &TargetRequest{}
 
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		badRequestReader(w, r.Body)
+		respondError(w, http.StatusBadRequest, "")
 		return
 	}
 
 	if rs.Session != req.Session {
 		fmt.Println(rs.Session, req.Session)
-		unauthorized(w)
+		respondError(w, http.StatusUnauthorized, "")
 		return
 	}
 
@@ -97,8 +97,7 @@ func (rs *SessionResource) PostTarget(w http.ResponseWriter, r *http.Request) {
 
 	go rs.Target()
 
-	ok(w)
-	json.NewEncoder(w).Encode(resp)
+	respondJSON(w, http.StatusOK, resp)
 }
 
 // Target sends a target request out. Uses the strategy object to calculate the

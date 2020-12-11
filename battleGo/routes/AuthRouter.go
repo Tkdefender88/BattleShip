@@ -70,7 +70,7 @@ func Refresh(next http.Handler) http.Handler {
 		})
 		if err != nil {
 			if err == jwt.ErrSignatureInvalid {
-				unauthorized(w)
+				respondError(w, http.StatusUnauthorized, "")
 				return
 			}
 			log.Printf("err %s\n", err)
@@ -95,7 +95,7 @@ func Refresh(next http.Handler) http.Handler {
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 		tokenString, err := token.SignedString(jwtKey)
 		if err != nil {
-			internalError(w)
+			respondError(w, http.StatusInternalServerError, "Internal Error")
 			return
 		}
 
@@ -117,7 +117,7 @@ func Authenticated(next http.Handler) http.Handler {
 				http.Redirect(w, r, "/auth/login", http.StatusFound)
 				return
 			}
-			badRequest(w, "")
+			respondError(w, http.StatusBadRequest, "")
 			return
 		}
 
@@ -134,7 +134,7 @@ func Authenticated(next http.Handler) http.Handler {
 				http.Redirect(w, r, "/auth/login", http.StatusFound)
 				return
 			}
-			badRequest(w, "")
+			respondError(w, http.StatusBadRequest, "")
 			return
 		}
 
@@ -151,7 +151,7 @@ func Authenticated(next http.Handler) http.Handler {
 func signIn(w http.ResponseWriter, r *http.Request) {
 	var creds Credentials
 	if err := r.ParseForm(); err != nil {
-		badRequest(w, err.Error())
+		respondError(w, http.StatusBadRequest, "")
 		return
 	}
 	creds.Username = r.FormValue("username")
@@ -160,7 +160,7 @@ func signIn(w http.ResponseWriter, r *http.Request) {
 	expectedPasswd, ok := users[creds.Username]
 
 	if !ok || expectedPasswd != creds.Password {
-		unauthorized(w)
+		respondError(w, http.StatusUnauthorized, "Incorrect username or password")
 		return
 	}
 
@@ -177,7 +177,7 @@ func signIn(w http.ResponseWriter, r *http.Request) {
 
 	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {
-		internalError(w)
+		respondError(w, http.StatusInternalServerError, "")
 		return
 	}
 
@@ -203,7 +203,7 @@ func signIn(w http.ResponseWriter, r *http.Request) {
 func loginPage(w http.ResponseWriter, r *http.Request) {
 	tmpl := template.Must(template.ParseFiles("views/base.html", "views/login.html"))
 	if err := tmpl.ExecuteTemplate(w, "base.html", nil); err != nil {
-		internalError(w)
+		respondError(w, http.StatusInternalServerError, "")
 		log.Println(err)
 	}
 }
