@@ -294,6 +294,7 @@ func (rs *SessionResource) StartSession() {
 func (rs *SessionResource) PostSession(w http.ResponseWriter, r *http.Request) {
 	req := &SessionRequest{}
 	err := json.NewDecoder(r.Body).Decode(req)
+
 	if err != nil {
 		log.Println(err)
 		respondError(w, http.StatusBadRequest, "")

@@ -123,17 +123,20 @@ type args struct {
 type expect struct {
 	status int
 	body   []byte
+	size   int
+}
+
+type testCase struct {
+	name   string
+	fields fields
+	args   args
+	expect expect
 }
 
 func TestBsStateResource_Get(t *testing.T) {
 	stacky, _ := json.Marshal(stackModel)
 
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		expect expect
-	}{
+	tests := []testCase{
 		{
 			name: "happyPath",
 			args: args{
@@ -176,16 +179,7 @@ func TestBsStateResource_Get(t *testing.T) {
 			// act
 			r.ServeHTTP(tt.args.w, tt.args.r)
 
-			// assert
-			resp := tt.args.w.Result()
-			if resp.StatusCode != tt.expect.status {
-				t.Errorf("Bad status code: Expected %d Got %d", tt.expect.status, resp.StatusCode)
-			}
-
-			respBody, _ := ioutil.ReadAll(resp.Body)
-			if bytes.Compare(respBody, tt.expect.body) != 0 {
-				t.Errorf("Error in response body: Expected %s Got %s", string(tt.expect.body), string(respBody))
-			}
+			assertStatusCodeAndBody(t, tt)
 		})
 	}
 }
@@ -194,12 +188,7 @@ func TestBsStateResource_Post(t *testing.T) {
 	stacky, _ := json.Marshal(stackModel)
 	badM, _ := json.Marshal(badModel)
 
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		expect expect
-	}{
+	tests := []testCase{
 		{
 			name: "happyPath",
 			fields: fields{
@@ -257,22 +246,26 @@ func TestBsStateResource_Post(t *testing.T) {
 			r.ServeHTTP(tt.args.w, tt.args.r)
 
 			// assert
-			resp := tt.args.w.Result()
-			if resp.StatusCode != tt.expect.status {
-				t.Errorf("expected %d got %d", tt.expect.status, resp.StatusCode)
-			}
-
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				t.Error(err)
-			}
-			defer resp.Body.Close()
-
-			if bytes.Compare(body, tt.expect.body) != 0 {
-				t.Errorf("Expected %+v got %+v", tt.expect.body, body)
-				t.Logf("%s", string(body))
-				t.Logf("%s", string(tt.expect.body))
-			}
+			assertStatusCodeAndBody(t, tt)
 		})
+	}
+}
+
+func assertStatusCodeAndBody(t *testing.T, tt testCase) {
+	resp := tt.args.w.Result()
+	if resp.StatusCode != tt.expect.status {
+		t.Errorf("expected %d got %d", tt.expect.status, resp.StatusCode)
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Error(err)
+	}
+	defer resp.Body.Close()
+
+	if bytes.Compare(body, tt.expect.body) != 0 {
+		t.Errorf("Expected %+v got %+v", tt.expect.body, body)
+		t.Logf("%s", string(body))
+		t.Logf("%s", string(tt.expect.body))
 	}
 }
