@@ -46,7 +46,6 @@ func (rs BsStateResource) Routes() chi.Router {
 // as the body and will save it to the file system
 func (rs BsStateResource) Post(w http.ResponseWriter, r *http.Request) {
 	filename := chi.URLParam(r, "filename")
-	log.Println(filename)
 	if len(filename) == 0 {
 		respondError(w, http.StatusBadRequest, "No model name given")
 		return
