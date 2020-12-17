@@ -8,9 +8,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/battlestate"
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/repository"
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/routes"
+	"github.com/Tkdefender88/BattleShip/battlestate"
+	"github.com/Tkdefender88/BattleShip/repository"
+	"github.com/Tkdefender88/BattleShip/routes"
 	"github.com/go-chi/chi"
 )
 

@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/http"
 
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/battlestate"
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/repository"
+	"github.com/Tkdefender88/BattleShip/battlestate"
+	"github.com/Tkdefender88/BattleShip/repository"
 	"github.com/go-chi/chi"
 	"go.mongodb.org/mongo-driver/mongo"
 )

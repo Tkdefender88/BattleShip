@@ -15,9 +15,10 @@ import (
 	"strconv"
 	"time"
 
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/battlestate"
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/repository"
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/solver"
+	"github.com/Tkdefender88/BattleShip/battlestate"
+	"github.com/Tkdefender88/BattleShip/repository"
+	"github.com/Tkdefender88/BattleShip/solver"
+
 	"github.com/go-chi/chi"
 	"go.mongodb.org/mongo-driver/mongo"
 )

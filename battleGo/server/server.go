@@ -14,8 +14,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/repository"
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/routes"
+	"github.com/Tkdefender88/BattleShip/repository"
+	"github.com/Tkdefender88/BattleShip/routes"
 )
 
 const (

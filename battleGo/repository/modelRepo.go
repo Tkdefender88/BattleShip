@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/net/context"
 
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/battlestate"
+	"github.com/Tkdefender88/BattleShip/battlestate"
 )
 
 const (

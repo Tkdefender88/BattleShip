@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/server"
+	"github.com/Tkdefender88/BattleShip/server"
 )
 
 func init() {

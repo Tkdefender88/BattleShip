@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/battlestate"
+	"github.com/Tkdefender88/BattleShip/battlestate"
 )
 
 const (

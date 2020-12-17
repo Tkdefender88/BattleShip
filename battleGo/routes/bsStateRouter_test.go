@@ -8,9 +8,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/battlestate"
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/repository"
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/routes"
+	"github.com/Tkdefender88/Battleship/battlestate"
+	"github.com/Tkdefender88/Battleship/repository"
+	"github.com/Tkdefender88/Battleship/routes"
+
 	"github.com/go-chi/chi"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"

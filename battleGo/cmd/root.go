@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"gitea.justinbak.com/juicetin/bsStatePersist/battleGo/server"
+	"github.com/Tkdefender88/BattleShip/server"
 	"github.com/spf13/cobra"
 )
 
