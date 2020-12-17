@@ -2,7 +2,5 @@
 node_modules/
 battleGo/public/
 battleGo/models/
-!battleGo/models/stacky
-!battleGo/models/empty
-battleGo/battleGo
+battleGo/BattleShip
 bsServer/public/

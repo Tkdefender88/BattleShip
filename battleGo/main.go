@@ -1,9 +1,9 @@
 package main
 
 import (
-    "gitea.justinbak.com/juicetin/bsStatePersist/battleGo/cmd"
+	"github.com/Tkdefender88/BattleShip/cmd"
 )
 
 func main() {
-    cmd.Execute()
+	cmd.Execute()
 }

@@ -2,6 +2,8 @@ package battlestate
 
 import (
 	"strings"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 const (
@@ -15,30 +17,32 @@ const (
 
 type Ship struct {
 	// Name of the ship, Carrier, Battleship etc.
-	Name string `json:"_name"`
+	Name string `json:"_name" bson:"_name,omitempty"`
 	// Size is the length of the ship
-	Size int `json:"_size"`
+	Size int `json:"_size" bson:"_size,omitempty"`
 	// Placed tells if the ship has a placement on the board
-	Placed bool `json:"_placed"`
+	Placed bool `json:"_placed" bson:"_placed,omitempty"`
 	// The placement of the player's ship, row column
-	Placement []int `json:"_placement"`
+	Placement []int `json:"_placement" bson:"_placement,omitempty"`
 	// HitProfiles are organized as a 2xSize array
 	// The first row in the array is player's ship hit profile
 	// The second row is the enemies ship hit profile
 	// When the hit profile is filled the ship is sunk
-	HitProfiles [][]string `json:"hitprofiles"`
+	HitProfiles [][]string `json:"hitprofiles" bson:"hitprofiles"`
 }
 
 // BsState represents the current battleship game state.
 // sent to the client to update the view
 type BsState struct {
-	Destroyer  *Ship `json:"destroyer"`
-	Submarine  *Ship `json:"submarine"`
-	Cruiser    *Ship `json:"cruiser"`
-	Battleship *Ship `json:"battleship"`
-	Carrier    *Ship `json:"carrier"`
+	ID         primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Name       string             `json:"name,omitempty" bson:"name,omitempty"`
+	Destroyer  *Ship              `json:"destroyer" bson:"destroyer"`
+	Submarine  *Ship              `json:"submarine" bson:"submarine"`
+	Cruiser    *Ship              `json:"cruiser" bson:"cruiser"`
+	Battleship *Ship              `json:"battleship" bson:"battleship"`
+	Carrier    *Ship              `json:"carrier" bson:"carrier"`
 	// Misses tracks the missed shots on the board
-	Misses []string `json:"misses"`
+	Misses []string `json:"misses" bson:"misses"`
 }
 
 // NewShip creates a new ship object of size, size
@@ -62,6 +66,10 @@ func NewBsState() *BsState {
 
 // Valid ensures the user has selected a ship placement that is valid for a game
 func (bs *BsState) Valid() bool {
+	if !(bs.Destroyer != nil && bs.Submarine != nil && bs.Cruiser != nil &&
+		bs.Battleship != nil && bs.Carrier != nil) {
+		return false
+	}
 	return bs.Destroyer.Placed &&
 		bs.Submarine.Placed &&
 		bs.Cruiser.Placed &&
