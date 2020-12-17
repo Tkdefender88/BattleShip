@@ -8,9 +8,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Tkdefender88/Battleship/battlestate"
-	"github.com/Tkdefender88/Battleship/repository"
-	"github.com/Tkdefender88/Battleship/routes"
+	"github.com/Tkdefender88/BattleShip/battlestate"
+	"github.com/Tkdefender88/BattleShip/repository"
+	"github.com/Tkdefender88/BattleShip/routes"
 
 	"github.com/go-chi/chi"
 	"go.mongodb.org/mongo-driver/bson/primitive"
