@@ -141,9 +141,9 @@ func NewStrategy() *Strategy {
 	}
 }
 
-func (s *Strategy) step() {
-	s.FireNext()
+func (s *Strategy) Step() int {
 	s.updateProbabilities()
+	return s.fireNext()
 }
 
 func (s *Strategy) zeroBoard() {
@@ -237,7 +237,7 @@ func (s *Strategy) RemoveShip(shipName string) {
 	s.updateProbabilities()
 }
 
-func (s *Strategy) FireNext() (index int) {
+func (s *Strategy) fireNext() (index int) {
 	shotCount++
 	// Sort the positions based on probability
 	sort.Slice(s.Grid, func(i, j int) bool {
@@ -262,7 +262,7 @@ func (s *Strategy) FireNext() (index int) {
 
 func indexFromString(target []rune) int {
 	row := int(target[0]) - 65
-	col := int(target[0]) - 48
+	col := int(target[1]) - 48
 	return row*10 + col
 }
 

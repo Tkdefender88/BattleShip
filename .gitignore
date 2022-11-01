@@ -1,7 +1,6 @@
 .idea/
 node_modules/
 battleGo/public/
-battleGo/models/boxy
-battleGo/models/stacky2
-battleGo/battleGo
+battleGo/models/
+battleGo/BattleShip
 bsServer/public/
